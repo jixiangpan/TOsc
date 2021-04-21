@@ -93,6 +93,10 @@ int main(int argc, char** argv)
 				  "c", "d", "e");
   
   Osc_test->Apply_POT_scaled();
+
+  //////////
+  
+  //Osc_test->Apply_Oscillation();
     
   ////////////////////////////////////////////////////////////////////////////////////////
   /*

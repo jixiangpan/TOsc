@@ -69,6 +69,9 @@ class TOsc {
     cout<<endl<<" ---> Hello TOscillation"<<endl<<endl;
     
     rand = new TRandom3(0);
+
+    Osc_delta_m2_eV2  = 7.25;// neutrino-4, arXiv:2003.03199
+    Osc_sin22theta_ee = 0.26;
     
     scaleF_POT = 1;
   }
@@ -82,14 +85,17 @@ class TOsc {
   double Osc_delta_m2_eV2;
   double Osc_sin22theta_ee;
 
+  // manually set the following two map
+  map<int, int>ch_nue_from_intrinsic_sample;// must be only two terms, first is FC, second is PC
+  map<int, int>zeroout_ch;
+  
   vector<TString>eventlist_beforescale_file; // intrinsic nue at each run
   vector< vector<EventInfo> >eventlist_beforescale_runs;
   vector<TString>event_afterscale_file; // merge.root only for intrinsic nue MC at each run
   vector<double>event_scaleF_runs; // calcualted by events_afterscale_file/events_list_file
   // validation: sum (events_list_file * events_scaleF) = events_summation_afterscale_file
 
-  map<int, int>ch_nue_from_intrinsic_sample;// must be only two terms, first is FC, second is PC
-  map<int, TH1F*>h1f_basic_nue_binning;
+  map<int, TH1F*>map_h1f_basic_nue_binning;
   
   TMatrixD matrix_transform;
   int bins_oldworld;
@@ -100,15 +106,18 @@ class TOsc {
   map<int, double>map_data_spectrum_newworld_bin;
 
   map<int, TString>map_input_spectrum_ch_str;
-  map<int, map<int, double> >map_nue_intrinsic_noosc_spectrum_ch_bin;// this is the Pnue noosc
-  map<int, map<int, double> >map_nue_intrinsic_wiosc_spectrum_ch_bin;// this is the Pnue wiosc
   map<int, map<int, double> >map_input_spectrum_ch_bin;// this is the Pother
-  map<int, double>map_input_spectrum_oldworld_bin;// ---> this would be Pnue + Pother
-
+  //map<int, double>map_input_spectrum_oldworld_bin;
+  map<int, map<int, double> >map_nue_intrinsic_noosc_spectrum_ch_bin;// this is the Pnue noosc, scaled by POT in Apply_POT_scaled()
+  map<int, map<int, double> >map_nue_intrinsic_wiosc_spectrum_ch_bin;// this is the Pnue wiosc, scaled by POT in Apply_Oscillation()
+  map<int, map<int, double> >map_pred_wiosc_ch_bin;// ---> this would be Pnue + Pother, set value in Apply_Oscillation()
+  map<int, double>map_pred_wiosc_oldworld_bin;     // ---> this would be Pnue + Pother, set value in Apply_Oscillation()
+    
   double scaleF_POT;
 
   TMatrixD matrix_data_newworld;
   TMatrixD matrix_pred_newworld;
+  TMatrixD matrix_pred_oldworld;
   
   ////////////////////
   
@@ -137,6 +146,8 @@ class TOsc {
   void Apply_POT_scaled();
 
   void Apply_Oscillation();
+
+  void Set_Collapse();
 };
 
 

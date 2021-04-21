@@ -41,11 +41,112 @@ namespace DataBase {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+//// ccc
+void TOsc::Set_Collapse()
+{
+
+}
 
 //// ccc
 void TOsc::Apply_Oscillation()
 {
+  
+  if( (int)ch_nue_from_intrinsic_sample.size()!=2 ) {cerr<<" ch_nue_from_intrinsic_sample.size()!=2"<<endl; exit(1); }
 
+  ///////////////////////////
+  
+  int temp_FC = 0;
+  int temp_PC = 0;
+  for(auto it_int_map=ch_nue_from_intrinsic_sample.begin(); it_int_map!=ch_nue_from_intrinsic_sample.end(); it_int_map++) {
+    int ich = it_int_map->first;
+    if( it_int_map==ch_nue_from_intrinsic_sample.begin() ) temp_FC = ich;
+    else temp_PC = ich;
+
+    /// initialize the nue intrinsic with Oscillation
+    map_h1f_basic_nue_binning[ich]->Reset();
+    map_nue_intrinsic_wiosc_spectrum_ch_bin.clear();
+  }
+  
+  int num_eventlist_file = eventlist_beforescale_runs.size();
+  for(int idx=0; idx<num_eventlist_file; idx++) {
+    int num_events = eventlist_beforescale_runs.at(idx).size();
+    double scaleF_eachrun = event_scaleF_runs.at(idx);
+    
+    for(int ievent=0; ievent<num_events; ievent++) {
+      double nueEtrue = eventlist_beforescale_runs.at(idx).at(ievent).nueEtrue;      
+      double baseline = eventlist_beforescale_runs.at(idx).at(ievent).baseline;
+      double nueEreco = eventlist_beforescale_runs.at(idx).at(ievent).nueEreco;
+      double weight = eventlist_beforescale_runs.at(idx).at(ievent).weight;
+      bool flag_FC = eventlist_beforescale_runs.at(idx).at(ievent).flag_FC;
+
+      double prob_val = ProbOsc(nueEtrue, baseline);
+      double weight_total = prob_val * weight*scaleF_eachrun * scaleF_POT;
+      
+      int ich = 0;
+      if( flag_FC ) ich = temp_FC;
+      else ich = temp_PC;
+
+      map_h1f_basic_nue_binning[ich]->Fill( nueEreco, weight_total );
+      
+    }// for(int ievent=0; ievent<num_events; ievent++)    
+  }// for(int idx=0; idx<num_eventlist_file; idx++)
+  
+  for(auto it_int_map=ch_nue_from_intrinsic_sample.begin(); it_int_map!=ch_nue_from_intrinsic_sample.end(); it_int_map++) {
+    int ich = it_int_map->first;
+    int bins = map_h1f_basic_nue_binning[ich]->GetNbinsX()+1;
+
+    for(int ibin=1; ibin<=bins; ibin++) {
+      double content = map_h1f_basic_nue_binning[ich]->GetBinContent(ibin);
+      map_nue_intrinsic_wiosc_spectrum_ch_bin[ich][ibin-1] = content;
+    }
+  }
+
+  ////////////////////////////
+
+  map_pred_wiosc_ch_bin.clear();  
+
+  for(auto it_it_map=map_input_spectrum_ch_bin.begin(); it_it_map!=map_input_spectrum_ch_bin.end(); it_it_map++) {
+    int ich = it_it_map->first; int bins = it_it_map->second.size();
+    for(int idx=0; idx<bins; idx++) {
+      double val_Pother = map_input_spectrum_ch_bin[ich][idx];
+      double val_Pnue = 0;
+      if( ch_nue_from_intrinsic_sample.find(ich)!=ch_nue_from_intrinsic_sample.end() )
+	{ val_Pnue = map_nue_intrinsic_wiosc_spectrum_ch_bin[ich][idx]; }
+      map_pred_wiosc_ch_bin[ich][idx] = val_Pother + val_Pnue;      
+    }
+  }
+
+  map_pred_wiosc_oldworld_bin.clear();
+  matrix_pred_oldworld.Clear();
+  matrix_pred_oldworld.ResizeTo(1, bins_oldworld);
+  
+  int line_temp_global = -1;
+  for(auto it_it_map=map_input_spectrum_ch_bin.begin(); it_it_map!=map_input_spectrum_ch_bin.end(); it_it_map++) {
+    int ich = it_it_map->first; int bins = it_it_map->second.size();
+    for(int idx=0; idx<bins; idx++) {
+      line_temp_global++;
+      double content = map_pred_wiosc_ch_bin[ich][idx];
+      map_pred_wiosc_oldworld_bin[line_temp_global] = content;
+      matrix_pred_oldworld(0, line_temp_global) = content;
+    }
+  }
+
+  //////////////////////////// validation during the development
+  // if( 1 ) {
+  //   TFile *file_test = new TFile("./data_nue_beforeafter_scale/merge_dm2_7d25_s22t_0d26.root", "read");
+  //   for(auto it_it_map=map_input_spectrum_ch_bin.begin(); it_it_map!=map_input_spectrum_ch_bin.end(); it_it_map++) {
+  //     int ich = it_it_map->first; int bins = it_it_map->second.size();
+  //     if( zeroout_ch.find(ich)!=zeroout_ch.end() ) continue;      
+  //     TH1F *h1f_temp = (TH1F*)file_test->Get(TString::Format("histo_%d", ich));
+  //     for(int idx=0; idx<bins; idx++) {
+  // 	double my_result = map_pred_wiosc_ch_bin[ich][idx];
+  // 	double wcpframe_result = h1f_temp->GetBinContent(idx+1);
+  // 	if( fabs(my_result-wcpframe_result)>1e-4 ) { cerr<<" fabs(my_result-wcpframe_result)>1e-4"<<endl; exit(1); }
+  //     }
+  //   }    
+  // }
+  //////////////////////////// end the validation during the development
+  
 }
 
 //// ccc
@@ -74,7 +175,11 @@ void TOsc::Apply_POT_scaled()
     int ich = it_it_map->first; int bins = it_it_map->second.size();
     for(int idx=0; idx<bins; idx++) map_input_spectrum_ch_bin[ich][idx] *= scaleF_POT;
   }
-  
+
+  for( auto it_it_map=map_nue_intrinsic_noosc_spectrum_ch_bin.begin(); it_it_map!=map_nue_intrinsic_noosc_spectrum_ch_bin.end(); it_it_map++) {
+    int ich = it_it_map->first; int bins = it_it_map->second.size();
+    for(int idx=0; idx<bins; idx++) map_nue_intrinsic_noosc_spectrum_ch_bin[ich][idx] *= scaleF_POT;
+  }
 }
 
 //// ccc
@@ -174,10 +279,14 @@ void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_
   for(auto it_double_map=ch_nue_from_intrinsic_sample.begin(); it_double_map!=ch_nue_from_intrinsic_sample.end(); it_double_map++) {
     int ich = it_double_map->first;
 
-    if( it_double_map==ch_nue_from_intrinsic_sample.begin() )
+    if( it_double_map==ch_nue_from_intrinsic_sample.begin() ) {
       h1_nue_FC_summation = (TH1F*)file_event_summation_afterscale->Get( TString::Format("histo_%d", ich) );
-    else
+      map_h1f_basic_nue_binning[ich] = (TH1F*)h1_nue_FC_summation->Clone(TString::Format("map_h1f_basic_nue_binning_%d", ich));
+    }
+    else {
       h1_nue_PC_summation = (TH1F*)file_event_summation_afterscale->Get( TString::Format("histo_%d", ich) );
+      map_h1f_basic_nue_binning[ich] = (TH1F*)h1_nue_PC_summation->Clone(TString::Format("map_h1f_basic_nue_binning_%d", ich));
+    }
     
     TH1F* h1f_temp = (TH1F*)file_event_summation_afterscale->Get( TString::Format("histo_%d", ich) );
     for(int ibin=1; ibin<=h1f_temp->GetNbinsX()+1; ibin++) {
@@ -277,8 +386,7 @@ void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_
   map_input_spectrum_ch_str[14]= "CCpi0_FC_ext";
   map_input_spectrum_ch_str[15]= "CCpi0_PC_ext";
   map_input_spectrum_ch_str[16]= "NCpi0_ext";
-
-  map<int, int>zeroout_ch;
+  
   zeroout_ch[8] = 1;
   zeroout_ch[9] = 1;
   for(auto it_zero=zeroout_ch.begin(); it_zero!=zeroout_ch.end(); it_zero++) 
