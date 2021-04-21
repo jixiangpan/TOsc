@@ -53,7 +53,8 @@ void read_scale()
 
   double scale_FC = ff_num_FC/mm_num_FC;
   double scale_PC = ff_num_PC/mm_num_PC;
- 
+  cout<<TString::Format(" ---> scale_FC %8.6f, scale_PC %8.6f", scale_FC, scale_PC)<<endl;
+  
   h1_nue_FC_mm->Scale( scale_FC );
   h1_nue_PC_mm->Scale( scale_PC );
 

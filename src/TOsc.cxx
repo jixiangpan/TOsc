@@ -42,10 +42,48 @@ namespace DataBase {
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString centralvalue_noosc_file, TString flux_geant_Xs_file_dir, TString detector_file_dir, TString MCstat_file_dir)
+//// ccc
+void TOsc::Apply_Oscillation()
+{
+
+}
+
+//// ccc
+void TOsc::Apply_POT_scaled()
+{
+  cout<<endl<<" ---> Apply_POT_scaled"<<endl<<endl;
+
+  //////////////// data
+
+  for( auto it_it_map=map_data_spectrum_ch_bin.begin(); it_it_map!=map_data_spectrum_ch_bin.end(); it_it_map++) {
+    int ich = it_it_map->first; int bins = it_it_map->second.size();
+    for(int idx=0; idx<bins; idx++) map_data_spectrum_ch_bin[ich][idx] *= scaleF_POT;
+  }
+
+  matrix_data_newworld.Clear();
+  matrix_data_newworld.ResizeTo(1, bins_newworld);
+  for( auto it_double_map=map_data_spectrum_newworld_bin.begin(); it_double_map!= map_data_spectrum_newworld_bin.end(); it_double_map++) {
+    int idx = it_double_map->first;
+    map_data_spectrum_newworld_bin[idx] *= scaleF_POT;
+    matrix_data_newworld(0, idx) = map_data_spectrum_newworld_bin[idx];
+  }
+
+  //////////////// pred
+
+  for( auto it_it_map=map_input_spectrum_ch_bin.begin(); it_it_map!=map_input_spectrum_ch_bin.end(); it_it_map++ ) {
+    int ich = it_it_map->first; int bins = it_it_map->second.size();
+    for(int idx=0; idx<bins; idx++) map_input_spectrum_ch_bin[ich][idx] *= scaleF_POT;
+  }
+  
+}
+
+//// ccc
+void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_afterscale_file, TString centralvalue_noosc_file, TString flux_geant_Xs_file_dir, TString detector_file_dir, TString MCstat_file_dir)
 {
   cout<<endl<<" ---> Set_Spectra_MatrixCov"<<endl<<endl;
 
+  TString roostr = "";
+  
   ////////////////////////////////////////
   
   cout<<" Read eventlist"<<endl;
@@ -57,10 +95,233 @@ void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString centralvalue_noo
     TString str_before, str_after;
     read_eventlist_filename>>str_before>>str_after;
     if( str_before=="end" ) break;
-    cout<<" ---> input file: "<<str_before<<"\t"<<str_after<<endl;
-    eventlist_beforescale_file.push_back( str_before );
-    event_afterscale_file.push_back( str_after );
+    cout<<" ---> eventlist input file: "<<str_before<<"\t"<<str_after<<endl;
+    eventlist_beforescale_file.push_back( eventlist_dir+str_before );
+    event_afterscale_file.push_back( eventlist_dir+str_after );
   }
+
+  //////
+  
+  int num_eventlist_file = eventlist_beforescale_file.size();
+  cout<<" ---> eventlist input file num: "<<num_eventlist_file<<endl;
+
+  for(int idx=0; idx<num_eventlist_file; idx++) {
+
+    //////
+    TFile *file_afterscale = new TFile( event_afterscale_file.at(idx), "read" );
+    TH1F *h1_nue_FC_afterscale = (TH1F*)file_afterscale->Get("histo_1");
+    int temp_bins = h1_nue_FC_afterscale->GetNbinsX();
+    double temp_xlow = h1_nue_FC_afterscale->GetXaxis()->GetBinLowEdge(1);
+    double temp_xhgh = h1_nue_FC_afterscale->GetXaxis()->GetBinUpEdge(temp_bins);
+    double integral_afterscale = h1_nue_FC_afterscale->Integral();
+    delete h1_nue_FC_afterscale;
+    delete file_afterscale;
+
+    TH1F *h1_FC_beforescale = new TH1F("h1_FC_beforescale", "", temp_bins, temp_xlow, temp_xhgh);    
+    
+    //////
+    vector<EventInfo>eventlist_eachrun;
+    
+    TString eventlist_file = eventlist_beforescale_file.at(idx);
+    ifstream read_eventlist_file_aa(eventlist_file, ios::in);
+    string str_read_eventlist_file_aa = "";
+    int line_read_eventlist_file_aa = 0;
+    while( getline(read_eventlist_file_aa, str_read_eventlist_file_aa) ) line_read_eventlist_file_aa++;
+    cout<<" processing file "<<eventlist_file<<"\t"<<line_read_eventlist_file_aa<<endl;
+    
+    ifstream read_eventlist_file_ab(eventlist_file, ios::in);
+    for(int idx=1; idx<=line_read_eventlist_file_aa; idx++) {
+      int pdg_val(0); double weight_val(0), nueEtrue(0), nueEreco(0), baseline(0); TString ch_name = "";
+      read_eventlist_file_ab>>pdg_val>>weight_val>>nueEtrue>>nueEreco>>baseline>>ch_name;
+      
+      bool flag_FC = false;
+      if( ch_name.Contains("_FC_") ) flag_FC = true;
+
+      EventInfo eventinfo;
+      eventinfo.flag_FC  = flag_FC;
+      eventinfo.pdg      = pdg_val;
+      eventinfo.weight   = weight_val;
+      eventinfo.nueEtrue = nueEtrue;
+      eventinfo.nueEreco = nueEreco;
+      eventinfo.baseline = baseline;
+      eventlist_eachrun.push_back( eventinfo );
+
+      if( flag_FC ) h1_FC_beforescale->Fill( nueEreco, weight_val );
+      
+    }// for(int idx=1; idx<=line_read_eventlist_file_aa; idx++)
+
+    double integral_beforescale = h1_FC_beforescale->Integral();
+    if( integral_beforescale==0 ) { cerr<<" integral_beforescale=0"<<endl; exit(1);  };
+    double temp_scaleF = integral_afterscale/integral_beforescale;
+    cout<<" processing file scaleF: "<<TString::Format("%8.6f", temp_scaleF)<<endl;
+    delete h1_FC_beforescale;
+
+    eventlist_beforescale_runs.push_back( eventlist_eachrun );
+    event_scaleF_runs.push_back( temp_scaleF );
+    
+  }// for(int idx=0; idx<num_eventlist_file; idx++)
+  
+  //////
+  
+  cout<<" ---> check eventlist after scale"<<endl;
+    
+  TFile *file_event_summation_afterscale = new TFile(event_summation_afterscale_file, "read");
+  ch_nue_from_intrinsic_sample[1] = 1;// FC
+  ch_nue_from_intrinsic_sample[2] = 1;// PC
+  
+  TH1F *h1_nue_FC_summation;
+  TH1F *h1_nue_PC_summation;  
+  for(auto it_double_map=ch_nue_from_intrinsic_sample.begin(); it_double_map!=ch_nue_from_intrinsic_sample.end(); it_double_map++) {
+    int ich = it_double_map->first;
+
+    if( it_double_map==ch_nue_from_intrinsic_sample.begin() )
+      h1_nue_FC_summation = (TH1F*)file_event_summation_afterscale->Get( TString::Format("histo_%d", ich) );
+    else
+      h1_nue_PC_summation = (TH1F*)file_event_summation_afterscale->Get( TString::Format("histo_%d", ich) );
+    
+    TH1F* h1f_temp = (TH1F*)file_event_summation_afterscale->Get( TString::Format("histo_%d", ich) );
+    for(int ibin=1; ibin<=h1f_temp->GetNbinsX()+1; ibin++) {
+      double content = h1f_temp->GetBinContent(ibin);
+      map_nue_intrinsic_noosc_spectrum_ch_bin[ich][ibin-1] = content;
+    }
+  }
+  
+  ///
+  TH1F *h1_nue_FC_subadd = (TH1F*)h1_nue_FC_summation->Clone("h1_nue_FC_subadd");
+  h1_nue_FC_subadd->Reset();
+  TH1F *h1_nue_PC_subadd = (TH1F*)h1_nue_PC_summation->Clone("h1_nue_PC_subadd");
+  h1_nue_PC_subadd->Reset();
+
+  for(int idx=0; idx<num_eventlist_file; idx++) {
+    int num_events = eventlist_beforescale_runs.at(idx).size();
+    double scaleF_eachrun = event_scaleF_runs.at(idx);
+    
+    for(int ievent=0; ievent<num_events; ievent++) {
+      //double nueEtrue = eventlist_beforescale_runs.at(idx).at(ievent).nueEtrue;      
+      //double baseline = eventlist_beforescale_runs.at(idx).at(ievent).baseline;
+      double nueEreco = eventlist_beforescale_runs.at(idx).at(ievent).nueEreco;
+      double weight = eventlist_beforescale_runs.at(idx).at(ievent).weight;
+      bool flag_FC = eventlist_beforescale_runs.at(idx).at(ievent).flag_FC;
+
+      if( flag_FC ) h1_nue_FC_subadd->Fill( nueEreco, weight*scaleF_eachrun );
+      else h1_nue_PC_subadd->Fill( nueEreco, weight*scaleF_eachrun );
+    }// for(int ievent=0; ievent<num_events; ievent++)
+    
+  }// for(int idx=0; idx<num_eventlist_file; idx++)
+
+  for(int ibin=1; ibin<=h1_nue_FC_subadd->GetNbinsX(); ibin++) {
+    double content_summation_FC = h1_nue_FC_summation->GetBinContent(ibin);
+    double content_subadd_FC = h1_nue_FC_subadd->GetBinContent(ibin);
+    double content_summation_PC = h1_nue_PC_summation->GetBinContent(ibin);
+    double content_subadd_PC = h1_nue_PC_subadd->GetBinContent(ibin);
+    if( fabs(content_summation_FC-content_subadd_FC)>1e-4 ) 
+      { cerr<<" content_summation_FC != content_subadd_FC"<<endl; exit(1); }
+    if( fabs(content_summation_PC-content_subadd_PC)>1e-4 ) 
+      { cerr<<" content_summation_PC != content_subadd_PC"<<endl; exit(1); }   
+  }
+  
+  ////////////////////////////////////////
+  
+  cout<<endl<<" Read centralvalue_noosc_file"<<endl;
+
+  TFile *file_centralvalue_noosc = new TFile(centralvalue_noosc_file, "read");
+
+  ////////
+  TMatrixD *mat_collapse = (TMatrixD*)file_centralvalue_noosc->Get("mat_collapse");
+
+  bins_oldworld = mat_collapse->GetNrows();
+  bins_newworld = mat_collapse->GetNcols();
+  
+  matrix_transform.Clear();
+  matrix_transform.ResizeTo( mat_collapse->GetNrows(), mat_collapse->GetNcols() );
+  matrix_transform = (*mat_collapse);  
+
+  ///////
+  
+  cout<<endl<<" Observations:"<<endl;
+
+  int line_global_channels_observation = -1;
+  for(int ich=1; ich<=channels_observation; ich++) {
+    roostr = TString::Format("hdata_obsch_%d", ich);
+    TH1F *h1_spectrum = (TH1F*)file_centralvalue_noosc->Get(roostr);
+    cout<<Form(" %2d  %-20s   bin-num %2d", ich, roostr.Data(), h1_spectrum->GetNbinsX()+1)<<endl;
+       
+    for(int ibin=1; ibin<=h1_spectrum->GetNbinsX()+1; ibin++) {
+      line_global_channels_observation++;
+      double content = h1_spectrum->GetBinContent(ibin);
+      map_data_spectrum_ch_bin[ich][ibin-1] = content;
+      map_data_spectrum_newworld_bin[line_global_channels_observation] = map_data_spectrum_ch_bin[ich][ibin-1];
+    }// ibin
+  }// ich
+
+  if( line_global_channels_observation+1!=bins_newworld )
+    { cerr<<" line_global_channels_observation+1!=bins_newworld"<<endl; exit(1);  }
+  
+  ///////
+  
+  cout<<endl<<" Predictions:"<<endl;
+   
+  map_input_spectrum_ch_str[1] = "nueCC_FC_norm";
+  map_input_spectrum_ch_str[2] = "nueCC_PC_norm";
+  map_input_spectrum_ch_str[3] = "numuCC_FC_norm";
+  map_input_spectrum_ch_str[4] = "numuCC_PC_norm";
+  map_input_spectrum_ch_str[5] = "CCpi0_FC_norm";
+  map_input_spectrum_ch_str[6] = "CCpi0_PC_norm";
+  map_input_spectrum_ch_str[7] = "NCpi0_norm";
+  map_input_spectrum_ch_str[8] = "Lee_FC";
+  map_input_spectrum_ch_str[9] = "Lee_PC"; 
+  map_input_spectrum_ch_str[10]= "nueCC_FC_ext";
+  map_input_spectrum_ch_str[11]= "nueCC_PC_ext";
+  map_input_spectrum_ch_str[12]= "numuCC_FC_ext";
+  map_input_spectrum_ch_str[13]= "numuCC_PC_ext";
+  map_input_spectrum_ch_str[14]= "CCpi0_FC_ext";
+  map_input_spectrum_ch_str[15]= "CCpi0_PC_ext";
+  map_input_spectrum_ch_str[16]= "NCpi0_ext";
+
+  map<int, int>zeroout_ch;
+  zeroout_ch[8] = 1;
+  zeroout_ch[9] = 1;
+  for(auto it_zero=zeroout_ch.begin(); it_zero!=zeroout_ch.end(); it_zero++) 
+    cout<<" ---> zeroout pred-ch: "<< it_zero->first <<endl;
+
+  for(int ich=1; ich<=(int)map_input_spectrum_ch_str.size(); ich++) {
+    roostr = TString::Format("histo_%d", ich);
+    TH1F *h1_spectrum = (TH1F*)file_centralvalue_noosc->Get(roostr);
+    int bins = h1_spectrum->GetNbinsX() + 1;    
+    cout<<Form(" %2d  %-20s   bin-num %2d", ich, map_input_spectrum_ch_str[ich].Data(), bins)<<endl;
+
+    for(int ibin=1; ibin<=bins; ibin++) {
+      double content = h1_spectrum->GetBinContent(ibin);
+      ////// case for no useful ch
+      if( zeroout_ch.find(ich)!=zeroout_ch.end() ) { content = 0; }      
+      map_input_spectrum_ch_bin[ich][ibin-1] = content;
+    }    
+  }
+
+  ////// minus Pnue to get Pother
+  for(auto it_map_input=map_input_spectrum_ch_bin.begin(); it_map_input!=map_input_spectrum_ch_bin.end(); it_map_input++) {
+    int ich = it_map_input->first;
+    int temp_size = it_map_input->second.size();
+    for(int idx=0; idx<temp_size; idx++) {
+      double content = map_input_spectrum_ch_bin[ich][idx];
+      if( ch_nue_from_intrinsic_sample.find(ich)!=ch_nue_from_intrinsic_sample.end() ) {
+	content -= map_nue_intrinsic_noosc_spectrum_ch_bin[ich][idx];
+      }
+      map_input_spectrum_ch_bin[ich][idx] = content;
+    }
+  }
+      
+  //////
+  int line_global_pred_input = -1;
+  for(auto it_map_input=map_input_spectrum_ch_bin.begin(); it_map_input!=map_input_spectrum_ch_bin.end(); it_map_input++) {
+    int temp_size = it_map_input->second.size();
+    for(int idx=0; idx<temp_size; idx++) {
+      line_global_pred_input++;
+    }
+  }
+  
+  if( line_global_pred_input+1!=bins_oldworld )
+    { cerr<<" line_global_pred_input+1!=bins_oldworld"<<endl; exit(1); }
   
 }
 

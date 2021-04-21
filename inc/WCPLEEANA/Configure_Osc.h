@@ -3,7 +3,15 @@ namespace config_Osc
   ////////// input files for spectra and covariance matrixes
 
   TString eventlist_dir = "./data_nue_beforeafter_scale/";
+  TString event_summation_afterscale_file = "./data_nue_beforeafter_scale/zz_merge_summation_allruns.root";
 
+  /// TOsc.cxx, manually set
+  /// map<int, int>ch_nueCC_from_intrinsic_sample
+  /// map<int, int>zeroout_ch;
+  
+  TString centralvalue_noosc_file = "./data_basic/merge_noosc.root";
+
+  int channels_observation = 7;
 }
 
 

@@ -54,8 +54,10 @@ using namespace std;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////// TOsc
 
-struct EvtList {
-  int pdg_val;
+struct EventInfo {
+  bool flag_FC;
+  int pdg;
+  double weight;
   double nueEtrue;
   double nueEreco;
   double baseline;
@@ -67,19 +69,48 @@ class TOsc {
     cout<<endl<<" ---> Hello TOscillation"<<endl<<endl;
     
     rand = new TRandom3(0);
+    
+    scaleF_POT = 1;
   }
 
   /////////////////////////////////////////////////////// data memeber
+  /// all the "map_bin" index are from zero
+  /// all the "map_ch" index are corresponding to the merge.root
 
   TRandom3 *rand;
 
-  vector<TString>eventlist_beforescale_file;         // intrinsic nue at each run
-  vector<EvtList>eventlist_beforescale;
-  vector<TString>event_afterscale_file;   // merge.root only for intrinsic nue MC at each run
-  vector<double>event_scaleF;             // calcualted by events_afterscale_file/events_list_file
-  TString event_summation_afterscale_file;// merge.root only for intrinsic nue MC from total runs
+  double Osc_delta_m2_eV2;
+  double Osc_sin22theta_ee;
+
+  vector<TString>eventlist_beforescale_file; // intrinsic nue at each run
+  vector< vector<EventInfo> >eventlist_beforescale_runs;
+  vector<TString>event_afterscale_file; // merge.root only for intrinsic nue MC at each run
+  vector<double>event_scaleF_runs; // calcualted by events_afterscale_file/events_list_file
   // validation: sum (events_list_file * events_scaleF) = events_summation_afterscale_file
+
+  map<int, int>ch_nue_from_intrinsic_sample;// must be only two terms, first is FC, second is PC
+  map<int, TH1F*>h1f_basic_nue_binning;
   
+  TMatrixD matrix_transform;
+  int bins_oldworld;
+  int bins_newworld;
+
+  int channels_observation;
+  map<int, map<int, double> >map_data_spectrum_ch_bin;
+  map<int, double>map_data_spectrum_newworld_bin;
+
+  map<int, TString>map_input_spectrum_ch_str;
+  map<int, map<int, double> >map_nue_intrinsic_noosc_spectrum_ch_bin;// this is the Pnue noosc
+  map<int, map<int, double> >map_nue_intrinsic_wiosc_spectrum_ch_bin;// this is the Pnue wiosc
+  map<int, map<int, double> >map_input_spectrum_ch_bin;// this is the Pother
+  map<int, double>map_input_spectrum_oldworld_bin;// ---> this would be Pnue + Pother
+
+  double scaleF_POT;
+
+  TMatrixD matrix_data_newworld;
+  TMatrixD matrix_pred_newworld;
+  
+  ////////////////////
   
   bool flag_syst_flux;
   bool flag_syst_geant;
@@ -90,8 +121,22 @@ class TOsc {
 
   /////////////////////////////////////////////////////// function memeber
 
-  void Set_Spectra_MatrixCov(TString eventlist_dir, TString centralvalue_noosc_file, TString flux_geant_Xs_file_dir, TString detector_file_dir, TString MCstat_file_dir);
+  void Set_OscPars(double delta_m2_eV2, double sin22theta_ee) {
+    Osc_delta_m2_eV2 = delta_m2_eV2;
+    Osc_sin22theta_ee = sin22theta_ee;
+  }
+
+  double ProbOsc(double nueEtrue, double baseline) {
+    double weight = 1;
+    weight = 1 - Osc_sin22theta_ee * pow(TMath::Sin(1.267 * Osc_delta_m2_eV2 * baseline/nueEtrue), 2);
+    return weight;
+  }
+
+  void Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_afterscale_file, TString centralvalue_noosc_file, TString flux_geant_Xs_file_dir, TString detector_file_dir, TString MCstat_file_dir);
   
+  void Apply_POT_scaled();
+
+  void Apply_Oscillation();
 };
 
 

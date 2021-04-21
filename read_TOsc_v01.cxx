@@ -83,9 +83,17 @@ int main(int argc, char** argv)
 
   ////////// just do it one time in the whole procedure
 
-  Osc_test->Set_Spectra_MatrixCov(config_Osc::eventlist_dir, "b", "c", "d", "e");
+  Osc_test->scaleF_POT = scaleF_POT;
   
+  Osc_test->channels_observation = config_Osc::channels_observation;;
   
+  Osc_test->Set_Spectra_MatrixCov(config_Osc::eventlist_dir,
+				  config_Osc::event_summation_afterscale_file,
+				  config_Osc::centralvalue_noosc_file,
+				  "c", "d", "e");
+  
+  Osc_test->Apply_POT_scaled();
+    
   ////////////////////////////////////////////////////////////////////////////////////////
   /*
   TLee *Lee_test = new TLee();
