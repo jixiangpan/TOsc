@@ -90,14 +90,26 @@ int main(int argc, char** argv)
   Osc_test->Set_Spectra_MatrixCov(config_Osc::eventlist_dir,
 				  config_Osc::event_summation_afterscale_file,
 				  config_Osc::centralvalue_noosc_file,
-				  "c", "d", "e");
+				  config_Osc::syst_result_dir, "d", "e");
   
   Osc_test->Apply_POT_scaled();
 
   //////////
+
+  // cout<<" test AA"<<endl;
+  // Osc_test->Apply_Oscillation();
+
+  // cout<<" test AB"<<endl;
+  // Osc_test->Set_OscPars(5, 0.5);
+  // Osc_test->Set_OscPars(7.25, 0.26);
+  // Osc_test->Apply_Oscillation();
+
+  Osc_test->Set_Collapse();
+
+  //////////
+
+
   
-  //Osc_test->Apply_Oscillation();
-    
   ////////////////////////////////////////////////////////////////////////////////////////
   /*
   TLee *Lee_test = new TLee();

@@ -10,6 +10,7 @@ namespace config_Osc
   /// map<int, int>zeroout_ch;
   
   TString centralvalue_noosc_file = "./data_basic/merge_noosc.root";
+  TString syst_result_dir = "./data_basic/";
 
   int channels_observation = 7;
 }

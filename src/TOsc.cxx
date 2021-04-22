@@ -44,7 +44,112 @@ namespace DataBase {
 //// ccc
 void TOsc::Set_Collapse()
 {
+  Apply_Oscillation();
+  
+  /////////////////////////////////////// central value
 
+  matrix_pred_newworld.ResizeTo(1, bins_newworld);
+  matrix_pred_newworld.Clear();
+  matrix_pred_newworld.ResizeTo(1, bins_newworld);
+  matrix_pred_newworld = matrix_pred_oldworld * matrix_transform;
+
+  /////////////////////////////////////// covariance matrix for the systematics
+
+  int global_bin = h2_space->FindBin( log10(Osc_sin22theta_ee), log10(Osc_delta_m2_eV2) );
+  int xbin(0), ybin(0), zbin(0);
+  h2_space->GetBinXYZ(global_bin, xbin, ybin, zbin);
+  if( xbin<1  ) xbin = 1;
+  if( xbin>h2_space->GetNbinsX() ) xbin = h2_space->GetNbinsX();
+  if( ybin<1  ) ybin = 1;
+  if( ybin>h2_space->GetNbinsY() ) ybin = h2_space->GetNbinsY();
+  
+  ////////////////
+
+  TMatrixD matrix_syst_abs_flux_before = matrix_syst_frac_flux_before[xbin][ybin];
+  TMatrixD matrix_syst_abs_geant_before = matrix_syst_frac_geant_before[xbin][ybin];
+  TMatrixD matrix_syst_abs_Xs_before = matrix_syst_frac_Xs_before[xbin][ybin];
+  TMatrixD matrix_syst_abs_detector_before = matrix_syst_frac_detector_before[xbin][ybin];
+  TMatrixD matrix_syst_abs_additional_before = matrix_syst_frac_additional_before[xbin][ybin];
+  
+  for(int idx=0; idx<bins_oldworld; idx++) {
+    for(int jdx=0; jdx<bins_oldworld; jdx++) {
+      double cv_i = matrix_pred_oldworld(0, idx);
+      double cv_j = matrix_pred_oldworld(0, jdx);
+      double cov_ij_frac = 0;
+
+      /// flux
+      cov_ij_frac = matrix_syst_abs_flux_before(idx, jdx);
+      matrix_syst_abs_flux_before(idx, jdx) = cov_ij_frac * cv_i * cv_j;
+   
+      /// geant
+      cov_ij_frac = matrix_syst_abs_geant_before(idx, jdx);
+      matrix_syst_abs_geant_before(idx, jdx) = cov_ij_frac * cv_i * cv_j;
+
+      /// Xs
+      cov_ij_frac = matrix_syst_abs_Xs_before(idx, jdx);
+      matrix_syst_abs_Xs_before(idx, jdx) = cov_ij_frac * cv_i * cv_j;
+
+      /// detector
+      cov_ij_frac = matrix_syst_abs_detector_before(idx, jdx);
+      matrix_syst_abs_detector_before(idx, jdx) = cov_ij_frac * cv_i * cv_j;
+
+      /// additional
+      cov_ij_frac = matrix_syst_abs_additional_before(idx, jdx);
+      matrix_syst_abs_additional_before(idx, jdx) = cov_ij_frac * cv_i * cv_j;               
+    }// jdx
+  }// idx
+
+  
+  TMatrixD matrix_transform_T = matrix_transform.T(); matrix_transform.T();
+
+  /// flux
+  matrix_syst_abs_flux_newworld.Clear();
+  matrix_syst_abs_flux_newworld.ResizeTo(bins_newworld, bins_newworld);
+  matrix_syst_abs_flux_newworld = matrix_transform_T * matrix_syst_abs_flux_before * matrix_transform;
+    
+  /// geant
+  matrix_syst_abs_geant_newworld.Clear();
+  matrix_syst_abs_geant_newworld.ResizeTo(bins_newworld, bins_newworld);
+  matrix_syst_abs_geant_newworld = matrix_transform_T * matrix_syst_abs_geant_before * matrix_transform;
+ 
+  /// Xs
+  matrix_syst_abs_Xs_newworld.Clear();
+  matrix_syst_abs_Xs_newworld.ResizeTo(bins_newworld, bins_newworld);
+  matrix_syst_abs_Xs_newworld = matrix_transform_T * matrix_syst_abs_Xs_before * matrix_transform;
+  
+  /// detector
+  matrix_syst_abs_detector_newworld.Clear();
+  matrix_syst_abs_detector_newworld.ResizeTo(bins_newworld, bins_newworld);
+  matrix_syst_abs_detector_newworld = matrix_transform_T * matrix_syst_abs_detector_before * matrix_transform;
+    
+  /// additional
+  matrix_syst_abs_additional_newworld.Clear();
+  matrix_syst_abs_additional_newworld.ResizeTo(bins_newworld, bins_newworld);
+  matrix_syst_abs_additional_newworld = matrix_transform_T * matrix_syst_abs_additional_before * matrix_transform;
+         
+  /// MCstat
+  matrix_syst_abs_MCstat_newworld.Clear();
+  matrix_syst_abs_MCstat_newworld.ResizeTo(bins_newworld, bins_newworld);
+  matrix_syst_abs_MCstat_newworld = matrix_syst_frac_MCstat_after[xbin][ybin];
+
+  /// total
+  matrix_syst_abs_total_newworld.Clear();
+  matrix_syst_abs_total_newworld.ResizeTo(bins_newworld, bins_newworld);
+  
+  matrix_syst_abs_total_newworld += matrix_syst_abs_flux_newworld;
+  matrix_syst_abs_total_newworld += matrix_syst_abs_geant_newworld;
+  matrix_syst_abs_total_newworld += matrix_syst_abs_Xs_newworld;
+  matrix_syst_abs_total_newworld += matrix_syst_abs_detector_newworld;
+  matrix_syst_abs_total_newworld += matrix_syst_abs_additional_newworld;
+  matrix_syst_abs_total_newworld += matrix_syst_abs_MCstat_newworld;
+
+  // for(int idx=0; idx<bins_newworld; idx++) {
+  //   double cv_i = matrix_pred_newworld(0, idx);
+  //   double cov_ii = matrix_syst_abs_total_newworld(idx, idx);
+  //   if(cv_i!=0)
+  //     cout<<TString::Format(" %3d %7.4f %10.2f", idx+1, sqrt(cov_ii)/cv_i, cv_i )<<endl;
+  // }
+  
 }
 
 //// ccc
@@ -133,7 +238,8 @@ void TOsc::Apply_Oscillation()
 
   //////////////////////////// validation during the development
   // if( 1 ) {
-  //   TFile *file_test = new TFile("./data_nue_beforeafter_scale/merge_dm2_7d25_s22t_0d26.root", "read");
+  //   //TFile *file_test = new TFile("./data_nue_beforeafter_scale/merge_dm2_7d25_s22t_0d26.root", "read");
+  //   //TFile *file_test = new TFile("./data_nue_beforeafter_scale/merge_noosc.root", "read");
   //   for(auto it_it_map=map_input_spectrum_ch_bin.begin(); it_it_map!=map_input_spectrum_ch_bin.end(); it_it_map++) {
   //     int ich = it_it_map->first; int bins = it_it_map->second.size();
   //     if( zeroout_ch.find(ich)!=zeroout_ch.end() ) continue;      
@@ -144,7 +250,7 @@ void TOsc::Apply_Oscillation()
   // 	if( fabs(my_result-wcpframe_result)>1e-4 ) { cerr<<" fabs(my_result-wcpframe_result)>1e-4"<<endl; exit(1); }
   //     }
   //   }    
-  // }
+  // }  
   //////////////////////////// end the validation during the development
   
 }
@@ -180,6 +286,21 @@ void TOsc::Apply_POT_scaled()
     int ich = it_it_map->first; int bins = it_it_map->second.size();
     for(int idx=0; idx<bins; idx++) map_nue_intrinsic_noosc_spectrum_ch_bin[ich][idx] *= scaleF_POT;
   }
+
+  //////////////// MCstat
+
+  double scaleF_POT2 = scaleF_POT * scaleF_POT;
+  
+  for(int xbin=1; xbin<=h2_space->GetNbinsX(); xbin++) {
+    for(int ybin=1; ybin<=h2_space->GetNbinsY(); ybin++) {
+      for(int idx=0; idx<bins_newworld; idx++) {
+	matrix_syst_frac_MCstat_after[xbin][ybin] *= scaleF_POT2;
+      }
+    }
+  }
+  
+  ////////////////
+  
 }
 
 //// ccc
@@ -430,6 +551,103 @@ void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_
   
   if( line_global_pred_input+1!=bins_oldworld )
     { cerr<<" line_global_pred_input+1!=bins_oldworld"<<endl; exit(1); }
+
+  //////////////////////////////////////
+  
+  cout<<endl<<" ---> set the inputs of systematics covariance matrix"<<endl<<endl;
+  
+  ////// X: sin22t14, 1e-2 -> 1   ---> "log10()" ---> -2 -> 0
+  ////// Y: m41^2,    1e-1 -> 20  ---> "log10()" ---> -1 -> 1.30103  
+  
+  const int bins_theta = 10;
+  const int bins_dm2   = 10;
+  h2_space = new TH2D("h2_space", "h2_space", bins_theta, -2, 0, bins_dm2, -1, 1.30103);
+
+  for(int xbin=1; xbin<=bins_theta; xbin++) {
+    for(int ybin=1; ybin<=bins_dm2; ybin++) {
+      
+      matrix_syst_frac_flux_before[xbin][ybin].ResizeTo(bins_oldworld, bins_oldworld);
+      matrix_syst_frac_flux_before[xbin][ybin].Clear();
+      matrix_syst_frac_flux_before[xbin][ybin].ResizeTo(bins_oldworld, bins_oldworld);
+           
+      matrix_syst_frac_geant_before[xbin][ybin].ResizeTo(bins_oldworld, bins_oldworld);
+      matrix_syst_frac_geant_before[xbin][ybin].Clear();
+      matrix_syst_frac_geant_before[xbin][ybin].ResizeTo(bins_oldworld, bins_oldworld);
+          
+      matrix_syst_frac_Xs_before[xbin][ybin].ResizeTo(bins_oldworld, bins_oldworld);
+      matrix_syst_frac_Xs_before[xbin][ybin].Clear();
+      matrix_syst_frac_Xs_before[xbin][ybin].ResizeTo(bins_oldworld, bins_oldworld);
+          
+      matrix_syst_frac_detector_before[xbin][ybin].ResizeTo(bins_oldworld, bins_oldworld);
+      matrix_syst_frac_detector_before[xbin][ybin].Clear();
+      matrix_syst_frac_detector_before[xbin][ybin].ResizeTo(bins_oldworld, bins_oldworld);
+           
+      matrix_syst_frac_additional_before[xbin][ybin].ResizeTo(bins_oldworld, bins_oldworld);
+      matrix_syst_frac_additional_before[xbin][ybin].Clear();
+      matrix_syst_frac_additional_before[xbin][ybin].ResizeTo(bins_oldworld, bins_oldworld);
+
+      /////////////////////////////////////////// flux_geant_Xs
+      
+      for( int idx=1; idx<=17; idx++ ) {
+	roostr = flux_geant_Xs_file_dir+TString::Format("result_syst_%d_%d/XsFlux/cov_%d.root", xbin, ybin, idx);
+	TFile *file_temp = new TFile(roostr, "read");	
+	TMatrixD *matrix_temp = (TMatrixD*)file_temp->Get( TString::Format("frac_cov_xf_mat_%d",idx) );
+	if(idx<=13) matrix_syst_frac_flux_before[xbin][ybin] += (*matrix_temp);
+	else if(idx<=16) matrix_syst_frac_geant_before[xbin][ybin] += (*matrix_temp);
+	else matrix_syst_frac_Xs_before[xbin][ybin] += (*matrix_temp);
+	delete file_temp;
+      }
+      
+      /////////////////////////////////////////// MCstat
+      
+      roostr = flux_geant_Xs_file_dir+TString::Format("result_syst_%d_%d/mc_stat/0.log", xbin, ybin);
+      
+      int count_check_MCstat = 0;
+      string line_check_MCstat;    
+      ifstream file_check(roostr);
+      while( getline(file_check, line_check_MCstat) ) count_check_MCstat++;      
+      if( (count_check_MCstat-1)!=bins_newworld ) {
+	cerr<<" Error (count_check_MCstat-1)!=bins_newworld: "<<roostr<<endl; exit(1);
+      }
+        
+      matrix_syst_frac_MCstat_after[xbin][ybin].ResizeTo(bins_newworld, bins_newworld);
+      matrix_syst_frac_MCstat_after[xbin][ybin].Clear();
+      matrix_syst_frac_MCstat_after[xbin][ybin].ResizeTo(bins_newworld, bins_newworld);
+
+      ifstream cppfile_temp(roostr, ios::in);
+      int line_cppfile = -1;
+      for(int idx=1; idx<=bins_newworld+1; idx++) {
+	double Lee(0), run(0);
+	int gbin = 0; int lbin = 0; double val_pred = 0; double mc_stat = 0; double nn_stat = 0;
+	if(idx==1) { cppfile_temp>>Lee>>run; }
+	else {
+	  line_cppfile++;
+	  cppfile_temp>>gbin>>lbin>>val_pred>>mc_stat>>nn_stat;
+	  matrix_syst_frac_MCstat_after[xbin][ybin](line_cppfile, line_cppfile) = mc_stat;
+	}
+      }// idx
+      cppfile_temp.close();
+      
+      ///////////////////////////////////////////
+      
+    }// ybin
+  }// xbin
+    
+  //////////////////////////////////////
+  
+  matrix_dataFIT_newworld.Clear();
+  matrix_dataFIT_newworld.ResizeTo(1, bins_newworld);
+  
+  //////////////////////////////////////
+  
+  cout<<endl;
+  cout<<" ---------------------------------------"<<endl;
+  cout<<" Make sure the \"zeroout_ch\" is correct"<<endl;
+  for(auto it_int_map=zeroout_ch.begin(); it_int_map!=zeroout_ch.end(); it_int_map++) {
+    cout<<" zeroout channel: "<<it_int_map->first<<endl;
+  }
+  
+  cout<<endl<<" ---> Finish Set_Spectra_MatrixCov"<<endl<<endl;
   
 }
 

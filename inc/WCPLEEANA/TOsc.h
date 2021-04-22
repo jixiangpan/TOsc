@@ -71,7 +71,7 @@ class TOsc {
     rand = new TRandom3(0);
 
     Osc_delta_m2_eV2  = 7.25;// neutrino-4, arXiv:2003.03199
-    Osc_sin22theta_ee = 0.26;
+    Osc_sin22theta_ee = 0;
     
     scaleF_POT = 1;
   }
@@ -120,6 +120,24 @@ class TOsc {
   TMatrixD matrix_pred_oldworld;
   
   ////////////////////
+
+  TH2D *h2_space;
+  
+  map<int, map<int, TMatrixD> >matrix_syst_frac_flux_before;
+  map<int, map<int, TMatrixD> >matrix_syst_frac_geant_before;
+  map<int, map<int, TMatrixD> >matrix_syst_frac_Xs_before;
+  map<int, map<int, TMatrixD> >matrix_syst_frac_detector_before;
+  map<int, map<int, TMatrixD> >matrix_syst_frac_additional_before;
+
+  map<int, map<int, TMatrixD> >matrix_syst_frac_MCstat_after;
+
+  TMatrixD matrix_syst_abs_flux_newworld;
+  TMatrixD matrix_syst_abs_geant_newworld;
+  TMatrixD matrix_syst_abs_Xs_newworld;
+  TMatrixD matrix_syst_abs_detector_newworld;
+  TMatrixD matrix_syst_abs_additional_newworld;
+  TMatrixD matrix_syst_abs_MCstat_newworld;
+  TMatrixD matrix_syst_abs_total_newworld;
   
   bool flag_syst_flux;
   bool flag_syst_geant;
@@ -128,14 +146,20 @@ class TOsc {
   bool flag_syst_additional;
   bool flag_syst_MCstat;
 
+  ////////////////////
+
+  TMatrixD matrix_dataFIT_newworld;
+  
   /////////////////////////////////////////////////////// function memeber
 
-  void Set_OscPars(double delta_m2_eV2, double sin22theta_ee) {
+  void Set_OscPars(double delta_m2_eV2, double sin22theta_ee)
+  {
     Osc_delta_m2_eV2 = delta_m2_eV2;
     Osc_sin22theta_ee = sin22theta_ee;
   }
 
-  double ProbOsc(double nueEtrue, double baseline) {
+  double ProbOsc(double nueEtrue, double baseline)
+  {
     double weight = 1;
     weight = 1 - Osc_sin22theta_ee * pow(TMath::Sin(1.267 * Osc_delta_m2_eV2 * baseline/nueEtrue), 2);
     return weight;
@@ -146,8 +170,12 @@ class TOsc {
   void Apply_POT_scaled();
 
   void Apply_Oscillation();
+  // output: matrix_pred_oldworld, map_pred_wiosc_oldworld_bin, map_pred_wiosc_ch_bin, map_nue_intrinsic_wiosc_spectrum_ch_bin
 
   void Set_Collapse();
+
+  void Set_Asimov2dataFIT() { matrix_dataFIT_newworld = matrix_pred_newworld; }
+  
 };
 
 
