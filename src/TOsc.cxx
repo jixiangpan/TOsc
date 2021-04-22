@@ -42,6 +42,172 @@ namespace DataBase {
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //// ccc
+void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, bool flag_fixed)
+{
+  TString roostr = "";
+  
+  minimization_status = (-100);
+  minimization_chi2   = (-100);
+    
+  if( !flag_fixed ) {
+    ROOT::Minuit2::Minuit2Minimizer min_Osc( ROOT::Minuit2::kMigrad );
+    min_Osc.SetPrintLevel(0);
+    min_Osc.SetStrategy(1); //0- cursory, 1- default, 2- thorough yet no more successful
+    min_Osc.SetMaxFunctionCalls(500000);
+    min_Osc.SetMaxIterations(500000);
+    min_Osc.SetTolerance(1e-4); // tolerance*2e-3 = edm precision
+    min_Osc.SetPrecision(1e-18); //precision in the target function
+
+    /// set fitting parameters
+    ROOT::Math::Functor Chi2Functor_Osc( [&](const double *par) {// FCN
+	TString roostr = "";
+	double chi2 = 0;
+	double s22theta = par[0];
+	double dm2 = par[1];
+
+	Set_OscPars(s22theta, dm2);
+	Set_Collapse();      
+
+	/////////
+
+	TMatrixD matrix_data = matrix_dataFIT_newworld;          
+	TMatrixD matrix_pred = matrix_pred_newworld;      
+	TMatrixD matrix_cov_syst = matrix_syst_abs_total_newworld;;
+      
+	int bins_fit = matrix_cov_syst.GetNrows();
+      
+	for(int idx=0; idx<bins_fit; idx++) {
+	  double val_stat_cov = 0;        
+	  double val_data = matrix_data(0, idx);
+	  double val_pred = matrix_pred(0, idx);
+        
+	  if( val_data==0 ) {
+	    val_stat_cov = val_pred/2;
+	  }
+	  else {
+	    if( val_pred!=0 ) val_stat_cov = 3./( 1./val_data + 2./val_pred );
+	    else val_stat_cov = val_data;
+	  }
+	
+	  matrix_cov_syst(idx, idx) += val_stat_cov;
+
+	  if( matrix_cov_syst(idx, idx)==0 ) matrix_cov_syst(idx, idx) = 1e-6;
+	}
+
+	/////////
+	TMatrixD matrix_cov_total = matrix_cov_syst;
+	TMatrixD matrix_cov_total_inv = matrix_cov_total;
+	matrix_cov_total_inv.Invert();
+      
+	////////
+	TMatrixD matrix_delta = matrix_pred - matrix_data;
+	TMatrixD matrix_delta_T = matrix_delta.T(); matrix_delta.T();
+   
+	TMatrixD matrix_chi2 = matrix_delta * matrix_cov_total_inv *matrix_delta_T;
+	chi2 = matrix_chi2(0,0);      
+      
+	///////////////////////////////////////////////////////////////////////////
+
+	//cout<<TString::Format(" ---> current s22theta and dm2: %8.4f %8.4f", s22theta, dm2)<<endl;
+      
+	return chi2;
+      
+      },// end of FCN
+      2 // number of fitting parameters
+      );
+  
+    min_Osc.SetFunction(Chi2Functor_Osc);
+  
+    min_Osc.SetVariable( 0, "sin_2_2theta", init_s22theta, 1e-3);
+    min_Osc.SetVariable( 1, "delta_m2", init_dm2, 1e-3);
+  
+    //min_Osc.SetLowerLimitedVariable(0, "sin_2_2theta", init_s22theta, 1e-3, 0);
+    //min_Osc.SetUpperLimitedVariable(0, "sin_2_2theta", init_s22theta, 1e-3, 1);
+
+    //min_Osc.SetVariableLowerLimit(0, 0);
+    //min_Osc.SetVariableUpperLimit(0, 1);
+
+    min_Osc.SetLimitedVariable(0, "sin_2_2theta", init_s22theta, 1e-3, 0, 1);
+    min_Osc.SetLowerLimitedVariable(1, "delta_m2", init_dm2, 1e-3, 0);  
+  
+    if( flag_fixed ) {
+      min_Osc.SetFixedVariable( 0, "sin_2_2theta", init_s22theta );
+      min_Osc.SetFixedVariable( 1, "delta_m2", init_dm2 );
+    }
+  
+    /// do the minimization
+    min_Osc.Minimize();
+    int status_Osc = min_Osc.Status();
+    const double *par_Osc = min_Osc.X();
+    const double *par_Osc_err = min_Osc.Errors();
+
+    if( status_Osc!=0 ) {
+      cerr<<" -----------> Oscillation pars fitting failed "<<endl;
+      minimization_status = status_Osc;
+    }
+
+    minimization_status = status_Osc;
+    minimization_chi2 = min_Osc.MinValue();
+    minimization_s22theta_val = par_Osc[0];
+    minimization_s22theta_err = par_Osc_err[0];
+    minimization_dm2_val = par_Osc[1];
+    minimization_dm2_err = par_Osc_err[1];
+  }
+
+  if( flag_fixed ) {
+    
+    double chi2 = 0;
+    double s22theta = init_s22theta;
+    double dm2      = init_dm2;
+
+    Set_OscPars(s22theta, dm2);
+    Set_Collapse();      
+
+    /////////
+
+    TMatrixD matrix_data = matrix_dataFIT_newworld;          
+    TMatrixD matrix_pred = matrix_pred_newworld;      
+    TMatrixD matrix_cov_syst = matrix_syst_abs_total_newworld;;
+      
+    int bins_fit = matrix_cov_syst.GetNrows();
+      
+    for(int idx=0; idx<bins_fit; idx++) {
+      double val_stat_cov = 0;        
+      double val_data = matrix_data(0, idx);
+      double val_pred = matrix_pred(0, idx);
+        
+      if( val_data==0 ) {
+	val_stat_cov = val_pred/2;
+      }
+      else {
+	if( val_pred!=0 ) val_stat_cov = 3./( 1./val_data + 2./val_pred );
+	else val_stat_cov = val_data;
+      }
+	
+      matrix_cov_syst(idx, idx) += val_stat_cov;
+
+      if( matrix_cov_syst(idx, idx)==0 ) matrix_cov_syst(idx, idx) = 1e-6;
+    }
+
+    /////////
+    TMatrixD matrix_cov_total = matrix_cov_syst;
+    TMatrixD matrix_cov_total_inv = matrix_cov_total;
+    matrix_cov_total_inv.Invert();
+      
+    ////////
+    TMatrixD matrix_delta = matrix_pred - matrix_data;
+    TMatrixD matrix_delta_T = matrix_delta.T(); matrix_delta.T();
+   
+    TMatrixD matrix_chi2 = matrix_delta * matrix_cov_total_inv *matrix_delta_T;
+    chi2 = matrix_chi2(0,0);      
+
+    minimization_chi2 = chi2;
+	
+  }// flag_fixed
+ 
+}
+
+//// ccc
 void TOsc::Set_Collapse()
 {
   Apply_Oscillation();

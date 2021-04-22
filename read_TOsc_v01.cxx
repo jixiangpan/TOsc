@@ -104,8 +104,12 @@ int main(int argc, char** argv)
   // Osc_test->Set_OscPars(7.25, 0.26);
   // Osc_test->Apply_Oscillation();
 
-  Osc_test->Set_Collapse();
-
+  // Osc_test->Set_OscPars(0.1, 2);
+  // Osc_test->Set_Collapse();
+  // Osc_test->Set_Asimov2dataFIT();
+  // Osc_test->Set_data2dataFIT();  
+  // Osc_test->Minimization_OscPars_FullCov(0.1, 1.8, 1);
+  
   //////////
 
 

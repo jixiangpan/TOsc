@@ -149,13 +149,20 @@ class TOsc {
   ////////////////////
 
   TMatrixD matrix_dataFIT_newworld;
+
+  int minimization_status;
+  double minimization_chi2;
+  double minimization_s22theta_val;
+  double minimization_s22theta_err;
+  double minimization_dm2_val;
+  double minimization_dm2_err;
   
   /////////////////////////////////////////////////////// function memeber
 
-  void Set_OscPars(double delta_m2_eV2, double sin22theta_ee)
-  {
-    Osc_delta_m2_eV2 = delta_m2_eV2;
+  void Set_OscPars(double sin22theta_ee, double delta_m2_eV2)
+  {    
     Osc_sin22theta_ee = sin22theta_ee;
+    Osc_delta_m2_eV2 = delta_m2_eV2;
   }
 
   double ProbOsc(double nueEtrue, double baseline)
@@ -175,7 +182,10 @@ class TOsc {
   void Set_Collapse();
 
   void Set_Asimov2dataFIT() { matrix_dataFIT_newworld = matrix_pred_newworld; }
+
+  void Set_data2dataFIT() { matrix_dataFIT_newworld = matrix_data_newworld; }
   
+  void Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, bool flag_fixed);
 };
 
 
