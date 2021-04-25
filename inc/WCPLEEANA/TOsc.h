@@ -85,10 +85,11 @@ class TOsc {
   double Osc_delta_m2_eV2;
   double Osc_sin22theta_ee;
 
-  // manually set the following two map
+  /// manually set the following two map
   map<int, int>ch_nue_from_intrinsic_sample;// must be only two terms, first is FC, second is PC
   map<int, int>zeroout_ch;
-  
+
+  ///
   vector<TString>eventlist_beforescale_file; // intrinsic nue at each run
   vector< vector<EventInfo> >eventlist_beforescale_runs;
   vector<TString>event_afterscale_file; // merge.root only for intrinsic nue MC at each run
@@ -107,7 +108,6 @@ class TOsc {
 
   map<int, TString>map_input_spectrum_ch_str;
   map<int, map<int, double> >map_input_spectrum_ch_bin;// this is the Pother
-  //map<int, double>map_input_spectrum_oldworld_bin;
   map<int, map<int, double> >map_nue_intrinsic_noosc_spectrum_ch_bin;// this is the Pnue noosc, scaled by POT in Apply_POT_scaled()
   map<int, map<int, double> >map_nue_intrinsic_wiosc_spectrum_ch_bin;// this is the Pnue wiosc, scaled by POT in Apply_Oscillation()
   map<int, map<int, double> >map_pred_wiosc_ch_bin;// ---> this would be Pnue + Pother, set value in Apply_Oscillation()
@@ -150,7 +150,7 @@ class TOsc {
 
   TMatrixD matrix_dataFIT_newworld;
 
-  int minimization_status;
+  int    minimization_status;
   double minimization_chi2;
   double minimization_s22theta_val;
   double minimization_s22theta_err;

@@ -471,6 +471,9 @@ void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_
   
   ////////////////////////////////////////
   
+  ch_nue_from_intrinsic_sample[1] = 1;// FC
+  ch_nue_from_intrinsic_sample[2] = 1;// PC
+  
   cout<<" Read eventlist"<<endl;
 
   TString str_read_eventlist_filename = eventlist_dir+"eventlist_filename.txt";
@@ -492,9 +495,9 @@ void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_
 
   for(int idx=0; idx<num_eventlist_file; idx++) {
 
-    //////
     TFile *file_afterscale = new TFile( event_afterscale_file.at(idx), "read" );
-    TH1F *h1_nue_FC_afterscale = (TH1F*)file_afterscale->Get("histo_1");
+    roostr = TString::Format("histo_%d", ch_nue_from_intrinsic_sample.begin()->first );
+    TH1F *h1_nue_FC_afterscale = (TH1F*)file_afterscale->Get(roostr);
     int temp_bins = h1_nue_FC_afterscale->GetNbinsX();
     double temp_xlow = h1_nue_FC_afterscale->GetXaxis()->GetBinLowEdge(1);
     double temp_xhgh = h1_nue_FC_afterscale->GetXaxis()->GetBinUpEdge(temp_bins);
@@ -518,10 +521,10 @@ void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_
     for(int idx=1; idx<=line_read_eventlist_file_aa; idx++) {
       int pdg_val(0); double weight_val(0), nueEtrue(0), nueEreco(0), baseline(0); TString ch_name = "";
       read_eventlist_file_ab>>pdg_val>>weight_val>>nueEtrue>>nueEreco>>baseline>>ch_name;
-      
+
       bool flag_FC = false;
       if( ch_name.Contains("_FC_") ) flag_FC = true;
-
+      
       EventInfo eventinfo;
       eventinfo.flag_FC  = flag_FC;
       eventinfo.pdg      = pdg_val;
@@ -531,8 +534,7 @@ void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_
       eventinfo.baseline = baseline;
       eventlist_eachrun.push_back( eventinfo );
 
-      if( flag_FC ) h1_FC_beforescale->Fill( nueEreco, weight_val );
-      
+      if( flag_FC ) h1_FC_beforescale->Fill( nueEreco, weight_val );      
     }// for(int idx=1; idx<=line_read_eventlist_file_aa; idx++)
 
     double integral_beforescale = h1_FC_beforescale->Integral();
@@ -542,8 +544,7 @@ void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_
     delete h1_FC_beforescale;
 
     eventlist_beforescale_runs.push_back( eventlist_eachrun );
-    event_scaleF_runs.push_back( temp_scaleF );
-    
+    event_scaleF_runs.push_back( temp_scaleF );    
   }// for(int idx=0; idx<num_eventlist_file; idx++)
   
   //////
@@ -551,9 +552,7 @@ void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_
   cout<<" ---> check eventlist after scale"<<endl;
     
   TFile *file_event_summation_afterscale = new TFile(event_summation_afterscale_file, "read");
-  ch_nue_from_intrinsic_sample[1] = 1;// FC
-  ch_nue_from_intrinsic_sample[2] = 1;// PC
-  
+
   TH1F *h1_nue_FC_summation;
   TH1F *h1_nue_PC_summation;  
   for(auto it_double_map=ch_nue_from_intrinsic_sample.begin(); it_double_map!=ch_nue_from_intrinsic_sample.end(); it_double_map++) {
@@ -644,7 +643,7 @@ void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_
   }// ich
 
   if( line_global_channels_observation+1!=bins_newworld )
-    { cerr<<" line_global_channels_observation+1!=bins_newworld"<<endl; exit(1);  }
+    { cerr<<" line_global_channels_observation+1!=bins_newworld"<<endl; exit(1); }
   
   ///////
   
@@ -690,26 +689,19 @@ void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_
   for(auto it_map_input=map_input_spectrum_ch_bin.begin(); it_map_input!=map_input_spectrum_ch_bin.end(); it_map_input++) {
     int ich = it_map_input->first;
     int temp_size = it_map_input->second.size();
-    for(int idx=0; idx<temp_size; idx++) {
-      double content = map_input_spectrum_ch_bin[ich][idx];
-      if( ch_nue_from_intrinsic_sample.find(ich)!=ch_nue_from_intrinsic_sample.end() ) {
-	content -= map_nue_intrinsic_noosc_spectrum_ch_bin[ich][idx];
+    if( ch_nue_from_intrinsic_sample.find(ich)!=ch_nue_from_intrinsic_sample.end() ) {
+      for(int idx=0; idx<temp_size; idx++) {
+	map_input_spectrum_ch_bin[ich][idx] -= map_nue_intrinsic_noosc_spectrum_ch_bin[ich][idx];	
       }
-      map_input_spectrum_ch_bin[ich][idx] = content;
     }
   }
       
   //////
   int line_global_pred_input = -1;
   for(auto it_map_input=map_input_spectrum_ch_bin.begin(); it_map_input!=map_input_spectrum_ch_bin.end(); it_map_input++) {
-    int temp_size = it_map_input->second.size();
-    for(int idx=0; idx<temp_size; idx++) {
-      line_global_pred_input++;
-    }
-  }
-  
-  if( line_global_pred_input+1!=bins_oldworld )
-    { cerr<<" line_global_pred_input+1!=bins_oldworld"<<endl; exit(1); }
+    for(int idx=0; idx<(int)it_map_input->second.size(); idx++) line_global_pred_input++;
+  }  
+  if( line_global_pred_input+1!=bins_oldworld ) { cerr<<" line_global_pred_input+1!=bins_oldworld"<<endl; exit(1); }
 
   //////////////////////////////////////
   
