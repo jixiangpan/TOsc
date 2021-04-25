@@ -69,9 +69,9 @@ int main(int argc, char** argv)
   gStyle->SetEndErrorSize(4);
   gStyle->SetEndErrorSize(0);
 
-  // if( !config_Lee::flag_display_graphics ) {
-  //   gROOT->SetBatch( 1 );
-  // }
+  if( !config_Osc::flag_display_graphics ) {
+    gROOT->SetBatch( 1 );
+  }
 
   ////////////////////////////////////////////////////////////////////////////////////////
   
@@ -83,17 +83,25 @@ int main(int argc, char** argv)
 
   ////////// just do it one time in the whole procedure
 
-  Osc_test->scaleF_POT = scaleF_POT;
-  
-  Osc_test->channels_observation = config_Osc::channels_observation;;
-  
+  Osc_test->channels_observation = config_Osc::channels_observation;
+
   Osc_test->Set_Spectra_MatrixCov(config_Osc::eventlist_dir,
 				  config_Osc::event_summation_afterscale_file,
 				  config_Osc::centralvalue_noosc_file,
 				  config_Osc::syst_result_dir, "d", "e");
   
+  Osc_test->scaleF_POT = scaleF_POT;  
   Osc_test->Apply_POT_scaled();
 
+  ////////// can do any times
+  
+  Osc_test->flag_syst_flux       = config_Osc::flag_syst_flux;
+  Osc_test->flag_syst_geant      = config_Osc::flag_syst_geant;
+  Osc_test->flag_syst_Xs         = config_Osc::flag_syst_Xs;
+  Osc_test->flag_syst_detector   = config_Osc::flag_syst_detector;
+  Osc_test->flag_syst_additional = config_Osc::flag_syst_additional;
+  Osc_test->flag_syst_MCstat     = config_Osc::flag_syst_MCstat;
+  
   //////////
 
   // cout<<" test AA"<<endl;
@@ -119,71 +127,63 @@ int main(int argc, char** argv)
   ////// Y: m41^2,    1e-1 -> 20  ---> "log10()" ---> -1 -> 1.30103  
 
   TH2D *h2_space = new TH2D("h2_space", "h2_space", bins_theta, -2, 0, bins_dm2, -1, 1.30103);
-
   
-  ////////////////////// 
-
-  double test_s22theta = 0.26;
-  double test_dm2      = 7.25;
-
-  //////
+  ////////////////////////////////////////////////////////
   
-  double dchi2_4vAsimov = 0;
-  double dchi2_3vAsimov = 0;
+  if( 1 ) {
+    double test_s22theta = 0.26;
+    double test_dm2      = 7.25;
+    
+    //////    
+    double dchi2_4vAsimov = 0;
+    double dchi2_3vAsimov = 0;
+    
+    double chi2_4v_on_data = 0;
+    double chi2_3v_on_data = 0;
+    double dchi2_data      = 0;
+    
+    /////////////////////////////////// 4v Asimov  
+    Osc_test->Set_OscPars(test_s22theta, test_dm2);
+    Osc_test->Set_Collapse();
+    Osc_test->Set_Asimov2dataFIT();
+    //Osc_test->Minimization_OscPars_FullCov(test_s22theta, test_dm2, 1); cout<<"  ---> min chi2: " <<Osc_test->minimization_chi2<<endl;
+    Osc_test->Minimization_OscPars_FullCov(0, 7.25, 1);
+    dchi2_4vAsimov = (-Osc_test->minimization_chi2);
+    
+    /////////////////////////////////// 3v Asimov    
+    Osc_test->Set_OscPars(0, 1);
+    Osc_test->Set_Collapse();
+    Osc_test->Set_Asimov2dataFIT();
+    //Osc_test->Minimization_OscPars_FullCov(0, 1, 1); cout<<"  ---> min chi2: " <<Osc_test->minimization_chi2<<endl;
+    Osc_test->Minimization_OscPars_FullCov(test_s22theta, test_dm2, 1);
+    dchi2_3vAsimov = Osc_test->minimization_chi2;
 
-  double chi2_4v_on_data = 0;
-  double chi2_3v_on_data = 0;
-  double dchi2_data      = 0;
+    /////////////////////////////////// data  
+    Osc_test->Set_data2dataFIT();
+    
+    Osc_test->Minimization_OscPars_FullCov(0, 1, 1);
+    chi2_3v_on_data = Osc_test->minimization_chi2;
+  
+    Osc_test->Minimization_OscPars_FullCov(test_s22theta, test_dm2, 1);
+    chi2_4v_on_data = Osc_test->minimization_chi2;
+    
+    dchi2_data = chi2_4v_on_data - chi2_3v_on_data;
 
-  /////////////////////////////////// 4v Asimov
-  
-  Osc_test->Set_OscPars(test_s22theta, test_dm2);
-  Osc_test->Set_Collapse();
-  Osc_test->Set_Asimov2dataFIT();
-  //Osc_test->Minimization_OscPars_FullCov(test_s22theta, test_dm2, 1); cout<<"  ---> min chi2: " <<Osc_test->minimization_chi2<<endl;
-  Osc_test->Minimization_OscPars_FullCov(0, 7.25, 1);
-  dchi2_4vAsimov = (-Osc_test->minimization_chi2);
-  //cout<<" chi2_4vAsimov "<<dchi2_4vAsimov<<endl;
+    ///////    
+    double delta_4v = dchi2_4vAsimov;
+    double delta_3v = dchi2_3vAsimov;
+    double delta_dd = dchi2_data;
+    
+    double numerator_erf = TMath::Erf( (delta_4v-delta_dd)/sqrt(8.*fabs(delta_4v)) );
+    double denominator_erf = TMath::Erf( (delta_3v-delta_dd)/sqrt(8.*fabs(delta_3v)) );
+    
+    double CLs = (1+numerator_erf)/(1+denominator_erf);
+    double result = 1 - CLs;  
+    cout<<endl<<" ---> test result: "<<result<<endl<<endl;
+  }
 
-  /////////////////////////////////// 3v Asimov
+  ////////////////////////////////////////////////////////
   
-  Osc_test->Set_OscPars(0, 1);
-  Osc_test->Set_Collapse();
-  Osc_test->Set_Asimov2dataFIT();
-  //Osc_test->Minimization_OscPars_FullCov(0, 1, 1); cout<<"  ---> min chi2: " <<Osc_test->minimization_chi2<<endl;
-  Osc_test->Minimization_OscPars_FullCov(test_s22theta, test_dm2, 1);
-  dchi2_3vAsimov = Osc_test->minimization_chi2;
-  //cout<<" chi2_3vAsimov "<<dchi2_3vAsimov<<endl;
-
-  /////////////////////////////////// data
-  
-  Osc_test->Set_data2dataFIT();
-  
-  Osc_test->Minimization_OscPars_FullCov(0, 1, 1);
-  chi2_3v_on_data = Osc_test->minimization_chi2;
-  //cout<<" chi2_3v_on_data "<<chi2_3v_on_data<<endl;
-  
-  Osc_test->Minimization_OscPars_FullCov(test_s22theta, test_dm2, 1);
-  chi2_4v_on_data = Osc_test->minimization_chi2;
-  //cout<<" chi2_4v_on_data "<<chi2_4v_on_data<<endl;
-  
-  dchi2_data = chi2_4v_on_data - chi2_3v_on_data;
-
-  ///////
-  ///////
-
-  double delta_4v = dchi2_4vAsimov;
-  double delta_3v = dchi2_3vAsimov;
-  double delta_dd = dchi2_data;
-  
-  double numerator_erf = TMath::Erf( (delta_4v-delta_dd)/sqrt(8.*fabs(delta_4v)) );
-  double denominator_erf = TMath::Erf( (delta_3v-delta_dd)/sqrt(8.*fabs(delta_3v)) );
-  
-  double CLs = (1+numerator_erf)/(1+denominator_erf);
-  double result = 1 - CLs;  
-  cout<<endl<<" ---> test result: "<<result<<endl<<endl;
-
-
   if( 1 ) {
 
     for(int ibin=1; ibin<=bins_theta; ibin++) {
@@ -400,13 +400,12 @@ int main(int argc, char** argv)
 
     canv_h2_basic_CLs_mc->SaveAs("canv_h2_basic_CLs_mc.png");            
   }
-
   
-  
-  cout<<endl<<" Enter Ctrl+c to end the program"<<endl;
-  cout<<" Enter Ctrl+c to end the program"<<endl<<endl;
-  
-  theApp.Run();
-
+  if( config_Osc::flag_display_graphics ) {
+    cout<<endl<<" Enter Ctrl+c to end the program"<<endl;
+    cout<<" Enter Ctrl+c to end the program"<<endl<<endl;  
+    theApp.Run();
+  }
+    
   return 0;
 }

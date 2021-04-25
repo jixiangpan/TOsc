@@ -13,4 +13,19 @@ namespace config_Osc
   TString syst_result_dir = "./data_basic/";
   
   int channels_observation = 7;
+
+  ////////// display graphics flag
+
+  bool flag_display_graphics = 0;
+  
+  ////////// systematics flag
+  
+  bool flag_syst_flux       = 1;
+  bool flag_syst_geant      = 1;
+  bool flag_syst_Xs         = 1;
+  bool flag_syst_detector   = 1;
+  bool flag_syst_additional = 1;
+  bool flag_syst_MCstat     = 1;
+
+
 }

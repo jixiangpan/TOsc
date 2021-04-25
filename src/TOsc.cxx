@@ -69,7 +69,6 @@ void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, b
 	Set_Collapse();      
 
 	/////////
-
 	TMatrixD matrix_data = matrix_dataFIT_newworld;          
 	TMatrixD matrix_pred = matrix_pred_newworld;      
 	TMatrixD matrix_cov_syst = matrix_syst_abs_total_newworld;;
@@ -96,19 +95,14 @@ void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, b
 
 	/////////
 	TMatrixD matrix_cov_total = matrix_cov_syst;
-	TMatrixD matrix_cov_total_inv = matrix_cov_total;
-	matrix_cov_total_inv.Invert();
+	TMatrixD matrix_cov_total_inv = matrix_cov_total; matrix_cov_total_inv.Invert();
       
 	////////
 	TMatrixD matrix_delta = matrix_pred - matrix_data;
 	TMatrixD matrix_delta_T = matrix_delta.T(); matrix_delta.T();
    
 	TMatrixD matrix_chi2 = matrix_delta * matrix_cov_total_inv *matrix_delta_T;
-	chi2 = matrix_chi2(0,0);      
-      
-	///////////////////////////////////////////////////////////////////////////
-
-	//cout<<TString::Format(" ---> current s22theta and dm2: %8.4f %8.4f", s22theta, dm2)<<endl;
+	chi2 = matrix_chi2(0,0);           
       
 	return chi2;
       
@@ -123,17 +117,16 @@ void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, b
   
     //min_Osc.SetLowerLimitedVariable(0, "sin_2_2theta", init_s22theta, 1e-3, 0);
     //min_Osc.SetUpperLimitedVariable(0, "sin_2_2theta", init_s22theta, 1e-3, 1);
-
     //min_Osc.SetVariableLowerLimit(0, 0);
     //min_Osc.SetVariableUpperLimit(0, 1);
 
     min_Osc.SetLimitedVariable(0, "sin_2_2theta", init_s22theta, 1e-3, 0, 1);
     min_Osc.SetLowerLimitedVariable(1, "delta_m2", init_dm2, 1e-3, 0);  
   
-    if( flag_fixed ) {
-      min_Osc.SetFixedVariable( 0, "sin_2_2theta", init_s22theta );
-      min_Osc.SetFixedVariable( 1, "delta_m2", init_dm2 );
-    }
+    // if( flag_fixed ) {
+    //   min_Osc.SetFixedVariable( 0, "sin_2_2theta", init_s22theta );
+    //   min_Osc.SetFixedVariable( 1, "delta_m2", init_dm2 );
+    // }
   
     /// do the minimization
     min_Osc.Minimize();
@@ -154,6 +147,10 @@ void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, b
     minimization_dm2_err = par_Osc_err[1];
   }
 
+  /////////////////////////////////////////////
+  /////////////////////////////////////////////
+  /////////////////////////////////////////////
+  
   if( flag_fixed ) {
     
     double chi2 = 0;
@@ -163,8 +160,7 @@ void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, b
     Set_OscPars(s22theta, dm2);
     Set_Collapse();      
 
-    /////////
-
+    /////////    
     TMatrixD matrix_data = matrix_dataFIT_newworld;          
     TMatrixD matrix_pred = matrix_pred_newworld;      
     TMatrixD matrix_cov_syst = matrix_syst_abs_total_newworld;;
@@ -191,8 +187,7 @@ void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, b
 
     /////////
     TMatrixD matrix_cov_total = matrix_cov_syst;
-    TMatrixD matrix_cov_total_inv = matrix_cov_total;
-    matrix_cov_total_inv.Invert();
+    TMatrixD matrix_cov_total_inv = matrix_cov_total; matrix_cov_total_inv.Invert();
       
     ////////
     TMatrixD matrix_delta = matrix_pred - matrix_data;
@@ -302,23 +297,21 @@ void TOsc::Set_Collapse()
   matrix_syst_abs_total_newworld.Clear();
   matrix_syst_abs_total_newworld.ResizeTo(bins_newworld, bins_newworld);
   
-  matrix_syst_abs_total_newworld += matrix_syst_abs_flux_newworld;
-  matrix_syst_abs_total_newworld += matrix_syst_abs_geant_newworld;
-  matrix_syst_abs_total_newworld += matrix_syst_abs_Xs_newworld;
-  matrix_syst_abs_total_newworld += matrix_syst_abs_detector_newworld;
-  matrix_syst_abs_total_newworld += matrix_syst_abs_additional_newworld;
-  matrix_syst_abs_total_newworld += matrix_syst_abs_MCstat_newworld;
+  if(flag_syst_flux)       matrix_syst_abs_total_newworld += matrix_syst_abs_flux_newworld;
+  if(flag_syst_geant)      matrix_syst_abs_total_newworld += matrix_syst_abs_geant_newworld;
+  if(flag_syst_Xs)         matrix_syst_abs_total_newworld += matrix_syst_abs_Xs_newworld;
+  if(flag_syst_detector)   matrix_syst_abs_total_newworld += matrix_syst_abs_detector_newworld;
+  if(flag_syst_additional) matrix_syst_abs_total_newworld += matrix_syst_abs_additional_newworld;
+  if(flag_syst_MCstat)     matrix_syst_abs_total_newworld += matrix_syst_abs_MCstat_newworld;
 
 }
 
 //// ccc
 void TOsc::Apply_Oscillation()
-{
-  
+{  
   if( (int)ch_nue_from_intrinsic_sample.size()!=2 ) {cerr<<" ch_nue_from_intrinsic_sample.size()!=2"<<endl; exit(1); }
 
-  ///////////////////////////
-  
+  ///////////////////////////  
   int temp_FC = 0;
   int temp_PC = 0;
   for(auto it_int_map=ch_nue_from_intrinsic_sample.begin(); it_int_map!=ch_nue_from_intrinsic_sample.end(); it_int_map++) {
@@ -344,7 +337,7 @@ void TOsc::Apply_Oscillation()
       bool flag_FC = eventlist_beforescale_runs.at(idx).at(ievent).flag_FC;
 
       double prob_val = ProbOsc(nueEtrue, baseline);
-      double weight_total = prob_val * weight*scaleF_eachrun * scaleF_POT;
+      double weight_total = prob_val * weight * scaleF_eachrun * scaleF_POT;
       
       int ich = 0;
       if( flag_FC ) ich = temp_FC;
@@ -366,7 +359,6 @@ void TOsc::Apply_Oscillation()
   }
 
   ////////////////////////////
-
   map_pred_wiosc_ch_bin.clear();  
 
   for(auto it_it_map=map_input_spectrum_ch_bin.begin(); it_it_map!=map_input_spectrum_ch_bin.end(); it_it_map++) {
@@ -420,7 +412,6 @@ void TOsc::Apply_POT_scaled()
   cout<<endl<<" ---> Apply_POT_scaled"<<endl<<endl;
 
   //////////////// data
-
   for( auto it_it_map=map_data_spectrum_ch_bin.begin(); it_it_map!=map_data_spectrum_ch_bin.end(); it_it_map++) {
     int ich = it_it_map->first; int bins = it_it_map->second.size();
     for(int idx=0; idx<bins; idx++) map_data_spectrum_ch_bin[ich][idx] *= scaleF_POT;
@@ -435,7 +426,6 @@ void TOsc::Apply_POT_scaled()
   }
 
   //////////////// pred
-
   for( auto it_it_map=map_input_spectrum_ch_bin.begin(); it_it_map!=map_input_spectrum_ch_bin.end(); it_it_map++ ) {
     int ich = it_it_map->first; int bins = it_it_map->second.size();
     for(int idx=0; idx<bins; idx++) map_input_spectrum_ch_bin[ich][idx] *= scaleF_POT;
@@ -447,9 +437,7 @@ void TOsc::Apply_POT_scaled()
   }
 
   //////////////// MCstat
-
-  double scaleF_POT2 = scaleF_POT * scaleF_POT;
-  
+  double scaleF_POT2 = scaleF_POT * scaleF_POT;  
   for(int xbin=1; xbin<=h2_space->GetNbinsX(); xbin++) {
     for(int ybin=1; ybin<=h2_space->GetNbinsY(); ybin++) {
       for(int idx=0; idx<bins_newworld; idx++) {
@@ -457,8 +445,6 @@ void TOsc::Apply_POT_scaled()
       }
     }
   }
-  
-  ////////////////
   
 }
 
