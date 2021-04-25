@@ -35,8 +35,12 @@ int main(int argc, char** argv)
   
   double scaleF_POT = 1;
   int ifile = 1;
+
+  int space_xbin = 1;
+  int space_ybin = 1;
   
-  for(int i=1; i<argc; i++) {    
+  for(int i=1; i<argc; i++) {
+    
     if( strcmp(argv[i],"-p")==0 ) {
       stringstream convert( argv[i+1] );
       if(  !( convert>>scaleF_POT ) ) { cerr<<" ---> Error scaleF_POT !"<<endl; exit(1); }
@@ -46,10 +50,23 @@ int main(int argc, char** argv)
       stringstream convert( argv[i+1] );
       if(  !( convert>>ifile ) ) { cerr<<" ---> Error ifile !"<<endl; exit(1); }
     }
-  }
-  
-  cout<<endl<<" ---> check, scaleF_POT "<<scaleF_POT<<", ifile "<<ifile<<endl<<endl;
 
+    if( strcmp(argv[i],"-x")==0 ) {
+      stringstream convert( argv[i+1] );
+      if(  !( convert>>space_xbin ) ) { cerr<<" ---> Error space_xbin !"<<endl; exit(1); }
+    }
+
+    if( strcmp(argv[i],"-y")==0 ) {
+      stringstream convert( argv[i+1] );
+      if(  !( convert>>space_ybin ) ) { cerr<<" ---> Error space_ybin !"<<endl; exit(1); }
+    }
+    
+  }
+
+  cout<<endl<<TString::Format(" ---> check, scaleF_POT %6.4f, ifile %d, space xbin/ybin %d %d",
+			      scaleF_POT, ifile, space_xbin, space_ybin
+			      )<<endl<<endl;
+  
   //////////////////////////////////////////////////////////////////////////////////////// Draw style
   
   gStyle->SetOptStat(0);
@@ -118,19 +135,9 @@ int main(int argc, char** argv)
   // Osc_test->Set_data2dataFIT();  
   // Osc_test->Minimization_OscPars_FullCov(0.1, 1.8, 1);
   
-  //////////
-
-  int bins_theta = 10;
-  int bins_dm2   = 10;
-
-  ////// X: sin22t14, 1e-2 -> 1   ---> "log10()" ---> -2 -> 0
-  ////// Y: m41^2,    1e-1 -> 20  ---> "log10()" ---> -1 -> 1.30103  
-
-  TH2D *h2_space = new TH2D("h2_space", "h2_space", bins_theta, -2, 0, bins_dm2, -1, 1.30103);
-  
   ////////////////////////////////////////////////////////
   
-  if( 1 ) {
+  if( 0 ) {
     double test_s22theta = 0.26;
     double test_dm2      = 7.25;
     
@@ -183,11 +190,22 @@ int main(int argc, char** argv)
   }
 
   ////////////////////////////////////////////////////////
+
   
-  if( 1 ) {
+  
+  ////////////////////////////////////////////////////////
+  
+  if( 0 ) {
 
+    int bins_theta = 10;
+    int bins_dm2   = 10;
+
+    ////// X: sin22t14, 1e-2 -> 1   ---> "log10()" ---> -2 -> 0
+    ////// Y: m41^2,    1e-1 -> 20  ---> "log10()" ---> -1 -> 1.30103      
+    TH2D *h2_space = new TH2D("h2_space", "h2_space", bins_theta, -2, 0, bins_dm2, -1, 1.30103);
+    
     for(int ibin=1; ibin<=bins_theta; ibin++) {
-
+      
       cout<<TString::Format(" ---> processing %4d/%4d", ibin, bins_theta)<<endl;
       
       for(int jbin=1; jbin<=bins_dm2; jbin++) {
@@ -261,8 +279,6 @@ int main(int argc, char** argv)
 	
       }// jbin
     }// ibin
-
-
      
     ///////
     const int Ncontour = 3;
@@ -306,9 +322,7 @@ int main(int argc, char** argv)
       nGraphs_mc += contLevel_mc->GetSize();
     }
 
-
     nGraphs_mc = 0;
-
     for(int i = 0; i < TotalConts_mc; i++){
       contLevel_mc = (TList*)conts_mc->At(i);
 
@@ -400,6 +414,8 @@ int main(int argc, char** argv)
 
     canv_h2_basic_CLs_mc->SaveAs("canv_h2_basic_CLs_mc.png");            
   }
+
+  ///////////////////////////////////////////////////////////////
   
   if( config_Osc::flag_display_graphics ) {
     cout<<endl<<" Enter Ctrl+c to end the program"<<endl;
