@@ -191,7 +191,73 @@ int main(int argc, char** argv)
 
   ////////////////////////////////////////////////////////
 
+  if( 1 ) {
+
+    int bins_theta = 10;
+    int bins_dm2   = 10;
+
+    ////// X: sin22t14, 1e-2 -> 1   ---> "log10()" ---> -2 -> 0
+    ////// Y: m41^2,    1e-1 -> 20  ---> "log10()" ---> -1 -> 1.30103      
+    TH2D *h2_space = new TH2D("h2_space", "h2_space", bins_theta, -2, 0, bins_dm2, -1, 1.30103);
+        
+    double test_s22theta = pow( 10, h2_space->GetXaxis()->GetBinCenter(space_xbin) );
+    double test_dm2      = pow( 10, h2_space->GetYaxis()->GetBinCenter(space_ybin) );
+    
+    //////    
+    double dchi2_4vAsimov = 0;
+    double dchi2_3vAsimov = 0;
+    
+    double chi2_4v_on_data = 0;
+    double chi2_3v_on_data = 0;
+    double dchi2_data      = 0;
+    
+    /////////////////////////////////// 4v Asimov  
+    Osc_test->Set_OscPars(test_s22theta, test_dm2);
+    Osc_test->Set_Collapse();
+    Osc_test->Set_Asimov2dataFIT();
+    //Osc_test->Minimization_OscPars_FullCov(test_s22theta, test_dm2, 1); cout<<"  ---> min chi2: " <<Osc_test->minimization_chi2<<endl;
+    Osc_test->Minimization_OscPars_FullCov(0, 7.25, 1);
+    dchi2_4vAsimov = (-Osc_test->minimization_chi2);
+    
+    /////////////////////////////////// 3v Asimov    
+    Osc_test->Set_OscPars(0, 1);
+    Osc_test->Set_Collapse();
+    Osc_test->Set_Asimov2dataFIT();
+    //Osc_test->Minimization_OscPars_FullCov(0, 1, 1); cout<<"  ---> min chi2: " <<Osc_test->minimization_chi2<<endl;
+    Osc_test->Minimization_OscPars_FullCov(test_s22theta, test_dm2, 1);
+    dchi2_3vAsimov = Osc_test->minimization_chi2;
+
+    /////////////////////////////////// data  
+    Osc_test->Set_data2dataFIT();
+    
+    Osc_test->Minimization_OscPars_FullCov(0, 1, 1);
+    chi2_3v_on_data = Osc_test->minimization_chi2;
   
+    Osc_test->Minimization_OscPars_FullCov(test_s22theta, test_dm2, 1);
+    chi2_4v_on_data = Osc_test->minimization_chi2;
+    
+    dchi2_data = chi2_4v_on_data - chi2_3v_on_data;
+
+    ///////    
+    double delta_4v = dchi2_4vAsimov;
+    double delta_3v = dchi2_3vAsimov;
+    double delta_dd = dchi2_data;
+    
+    double numerator_erf = TMath::Erf( (delta_4v-delta_dd)/sqrt(8.*fabs(delta_4v)) );
+    double denominator_erf = TMath::Erf( (delta_3v-delta_dd)/sqrt(8.*fabs(delta_3v)) );
+    
+    double CLs = (1+numerator_erf)/(1+denominator_erf);
+    double CL = 1 - CLs;
+    //cout<<" ---> "<<CL<<endl;
+
+    roostr = TString::Format("out_result_%04d_%04d.txt", space_xbin, space_ybin);
+    ofstream ListWrite(roostr, ios::out|ios::trunc);
+    ListWrite<<TString::Format("%4d %4d %12.6f %12.6f %12.6f %18.15f",
+			       space_xbin, space_ybin,
+			       delta_4v, delta_3v, delta_dd, CL
+			       )<<endl;
+    ListWrite.close();
+  }
   
   ////////////////////////////////////////////////////////
   
