@@ -226,6 +226,12 @@ void TOsc::Set_Collapse()
   if( ybin<1  ) ybin = 1;
   if( ybin>h2_space->GetNbinsY() ) ybin = h2_space->GetNbinsY();
 
+  if( fabs(Osc_sin22theta_ee)<1e-2 ) {// no oscillation case
+    xbin = 0;
+    ybin = 0;
+    //cout<<" Using the syst covariance assuming no oscillation"<<endl;
+  }
+  
   ////////////////
 
   TMatrixD matrix_syst_abs_flux_before = matrix_syst_frac_flux_before[xbin][ybin];
@@ -440,8 +446,11 @@ void TOsc::Apply_POT_scaled()
 
   //////////////// MCstat
   double scaleF_POT2 = scaleF_POT * scaleF_POT;  
-  for(int xbin=1; xbin<=h2_space->GetNbinsX(); xbin++) {
-    for(int ybin=1; ybin<=h2_space->GetNbinsY(); ybin++) {
+  for(int xbin=0; xbin<=h2_space->GetNbinsX(); xbin++) {
+    for(int ybin=0; ybin<=h2_space->GetNbinsY(); ybin++) {
+      if( ybin==0 && xbin!=0 ) continue;
+      if( xbin==0 && ybin!=0 ) continue;
+      
       for(int idx=0; idx<bins_newworld; idx++) {
 	matrix_syst_frac_MCstat_after[xbin][ybin] *= scaleF_POT2;
       }
@@ -702,11 +711,12 @@ void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_
   const int bins_dm2   = 40;
   h2_space = new TH2D("h2_space", "h2_space", bins_theta, -2, 0, bins_dm2, -1, 1.30103);
 
-  for(int xbin=1; xbin<=bins_theta; xbin++) {
-
+  for(int xbin=0; xbin<=bins_theta; xbin++) {
     cout<<TString::Format(" ---> initializing xbin %3d / %3d", xbin, bins_theta)<<endl;
     
-    for(int ybin=1; ybin<=bins_dm2; ybin++) {
+    for(int ybin=0; ybin<=bins_dm2; ybin++) {      
+      if( ybin==0 && xbin!=0 ) continue;
+      if( xbin==0 && ybin!=0 ) continue;
       
       matrix_syst_frac_flux_before[xbin][ybin].ResizeTo(bins_oldworld, bins_oldworld);
       matrix_syst_frac_flux_before[xbin][ybin].Clear();
@@ -731,21 +741,22 @@ void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_
       /////////////////////////////////////////// flux_geant_Xs
       
       for( int idx=1; idx<=17; idx++ ) {
+	
 	roostr = flux_geant_Xs_file_dir+TString::Format("result_syst_%d_%d/XsFlux/cov_%d.root", xbin, ybin, idx);
-	//roostr = TString::Format("/home/xji/data0/work/505_TLee/TLee_41_test_framework/numi_summary_osc/XsFlux/cov_%d.root", idx);
 	
 	TFile *file_temp = new TFile(roostr, "read");	
 	TMatrixD *matrix_temp = (TMatrixD*)file_temp->Get( TString::Format("frac_cov_xf_mat_%d",idx) );
 	if(idx<=13) matrix_syst_frac_flux_before[xbin][ybin] += (*matrix_temp);
 	else if(idx<=16) matrix_syst_frac_geant_before[xbin][ybin] += (*matrix_temp);
 	else matrix_syst_frac_Xs_before[xbin][ybin] += (*matrix_temp);
+	delete matrix_temp;
 	delete file_temp;
+	
       }
       
       /////////////////////////////////////////// MCstat
       
       roostr = flux_geant_Xs_file_dir+TString::Format("result_syst_%d_%d/mc_stat/0.log", xbin, ybin);
-      //roostr = TString::Format("/home/xji/data0/work/505_TLee/TLee_41_test_framework/numi_summary_osc/mcstat/0.log");
       
       int count_check_MCstat = 0;
       string line_check_MCstat;    

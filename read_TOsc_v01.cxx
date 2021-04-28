@@ -231,7 +231,7 @@ int main(int argc, char** argv)
 
     ////// X: sin22t14, 1e-2 -> 1   ---> "log10()" ---> -2 -> 0
     ////// Y: m41^2,    1e-1 -> 20  ---> "log10()" ---> -1 -> 1.30103      
-    TH2D *h2_space = new TH2D("h2_space", "h2_space", bins_theta, -2, 0, bins_dm2, -1, 1.30103);
+    TH2D *h2_space = new TH2D("h2_space_jobs", "h2_space_jobs", bins_theta, -2, 0, bins_dm2, -1, 1.30103);
         
     double test_s22theta = pow( 10, h2_space->GetXaxis()->GetBinCenter(space_xbin) );
     double test_dm2      = pow( 10, h2_space->GetYaxis()->GetBinCenter(space_ybin) );
@@ -293,12 +293,14 @@ int main(int argc, char** argv)
   
   if( 1 ) {
 
+    cout<<endl<<" ---> for whole scan at one time"<<endl<<endl;
+    
     int bins_theta = 40;
     int bins_dm2   = 40;
 
     ////// X: sin22t14, 1e-2 -> 1   ---> "log10()" ---> -2 -> 0
     ////// Y: m41^2,    1e-1 -> 20  ---> "log10()" ---> -1 -> 1.30103      
-    TH2D *h2_space = new TH2D("h2_space", "h2_space", bins_theta, -2, 0, bins_dm2, -1, 1.30103);
+    TH2D *h2_space = new TH2D("h2_space_whole", "h2_space_whole", bins_theta, -2, 0, bins_dm2, -1, 1.30103);
     
     for(int ibin=xlow; ibin<=xhgh; ibin++) {      
       cout<<TString::Format(" ---> processing %4d/%4d", ibin, bins_theta)<<endl;
