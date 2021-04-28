@@ -16,7 +16,7 @@ namespace config_Osc
 
   ////////// display graphics flag
 
-  bool flag_display_graphics = 0;
+  bool flag_display_graphics = 1;
   
   ////////// systematics flag
   

@@ -179,7 +179,9 @@ void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, b
 	if( val_pred!=0 ) val_stat_cov = 3./( 1./val_data + 2./val_pred );
 	else val_stat_cov = val_data;
       }
-	
+
+      //val_stat_cov = val_pred;// Pearson format
+      
       matrix_cov_syst(idx, idx) += val_stat_cov;
 
       if( matrix_cov_syst(idx, idx)==0 ) matrix_cov_syst(idx, idx) = 1e-6;
@@ -223,7 +225,7 @@ void TOsc::Set_Collapse()
   if( xbin>h2_space->GetNbinsX() ) xbin = h2_space->GetNbinsX();
   if( ybin<1  ) ybin = 1;
   if( ybin>h2_space->GetNbinsY() ) ybin = h2_space->GetNbinsY();
-  
+
   ////////////////
 
   TMatrixD matrix_syst_abs_flux_before = matrix_syst_frac_flux_before[xbin][ybin];
@@ -696,11 +698,14 @@ void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_
   ////// X: sin22t14, 1e-2 -> 1   ---> "log10()" ---> -2 -> 0
   ////// Y: m41^2,    1e-1 -> 20  ---> "log10()" ---> -1 -> 1.30103  
   
-  const int bins_theta = 10;
-  const int bins_dm2   = 10;
+  const int bins_theta = 40;
+  const int bins_dm2   = 40;
   h2_space = new TH2D("h2_space", "h2_space", bins_theta, -2, 0, bins_dm2, -1, 1.30103);
 
   for(int xbin=1; xbin<=bins_theta; xbin++) {
+
+    cout<<TString::Format(" ---> initializing xbin %3d / %3d", xbin, bins_theta)<<endl;
+    
     for(int ybin=1; ybin<=bins_dm2; ybin++) {
       
       matrix_syst_frac_flux_before[xbin][ybin].ResizeTo(bins_oldworld, bins_oldworld);
@@ -727,6 +732,8 @@ void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_
       
       for( int idx=1; idx<=17; idx++ ) {
 	roostr = flux_geant_Xs_file_dir+TString::Format("result_syst_%d_%d/XsFlux/cov_%d.root", xbin, ybin, idx);
+	//roostr = TString::Format("/home/xji/data0/work/505_TLee/TLee_41_test_framework/numi_summary_osc/XsFlux/cov_%d.root", idx);
+	
 	TFile *file_temp = new TFile(roostr, "read");	
 	TMatrixD *matrix_temp = (TMatrixD*)file_temp->Get( TString::Format("frac_cov_xf_mat_%d",idx) );
 	if(idx<=13) matrix_syst_frac_flux_before[xbin][ybin] += (*matrix_temp);
@@ -738,6 +745,7 @@ void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_
       /////////////////////////////////////////// MCstat
       
       roostr = flux_geant_Xs_file_dir+TString::Format("result_syst_%d_%d/mc_stat/0.log", xbin, ybin);
+      //roostr = TString::Format("/home/xji/data0/work/505_TLee/TLee_41_test_framework/numi_summary_osc/mcstat/0.log");
       
       int count_check_MCstat = 0;
       string line_check_MCstat;    
