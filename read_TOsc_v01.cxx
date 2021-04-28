@@ -282,7 +282,7 @@ int main(int argc, char** argv)
 
     roostr = TString::Format("out_result_%04d_%04d.txt", space_xbin, space_ybin);
     ofstream ListWrite(roostr, ios::out|ios::trunc);
-    ListWrite<<TString::Format("%4d %4d %12.6f %12.6f %12.6f %18.15f",
+    ListWrite<<TString::Format("%4d %4d %20.10f %20.10f %20.10f %18.15f",
 			       space_xbin, space_ybin,
 			       delta_4v, delta_3v, delta_dd, CL
 			       )<<endl;
@@ -363,7 +363,7 @@ int main(int argc, char** argv)
 	
 	roostr = TString::Format("out_result_%04d_%04d.txt", ibin, jbin);
 	ofstream ListWrite(roostr, ios::out|ios::trunc);
-	ListWrite<<TString::Format("%4d %4d %12.6f %12.6f %12.6f %18.15f",
+	ListWrite<<TString::Format("%4d %4d %20.10f %20.10f %20.10f %18.15f",
 				   ibin, jbin,
 				   delta_4v, delta_3v, delta_dd, CL
 				   )<<endl;

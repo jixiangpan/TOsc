@@ -109,6 +109,13 @@ void func_get_contours(TH2D *h2_CL, TGraph *gh_CL[3], int index)
   delete canv_h2_CL;
 }
 
+
+double func_CLs(double eff_d4v, double eff_d3v, double eff_dd) {
+  double result = ( 1+TMath::Erf( (eff_d4v-eff_dd)/sqrt(8*fabs(eff_d4v)) ) )
+    / ( 1+TMath::Erf( (eff_d3v-eff_dd)/sqrt(8*fabs(eff_d3v)) ) );
+  return result;
+}
+
 //////////////////////////////////////////////////////////////////
 ///////////////////////// MAIN ///////////////////////////////////
 //////////////////////////////////////////////////////////////////
@@ -146,30 +153,35 @@ void plot_CLs()
   
   ////////////////////////////////////////////////////////////////////////////////////////
   
-  int bins_theta = 10;
-  int bins_dm2   = 10;
-
+  TString file_roostr = "sum_40by40.txt";
+  
+  int bins_theta = 40;
+  int bins_dm2   = 40;
   
   ////// X: sin22t14, 1e-2 -> 1   ---> "log10()" ---> -2 -> 0
   ////// Y: m41^2,    1e-1 -> 20  ---> "log10()" ---> -1 -> 1.30103
 
-  
-  TH2D *h2_space_data = new TH2D("h2_space_data", "h2_space_data", bins_theta, -2, 0, bins_dm2, -1, 1.30103);
-  
-  TH2D *h2_space_sens = new TH2D("h2_space_sens", "h2_space_sens", bins_theta, -2, 0, bins_dm2, -1, 1.30103);
+  roostr = "h2_space_data";
+  TH2D *h2_space_data = new TH2D(roostr, roostr, bins_theta, -2, 0, bins_dm2, -1, 1.30103);
 
-  roostr = "h2_space_sens_xx_plus_1sigma";
-  TH2D *h2_space_sens_xx_plus_1sigma = new TH2D(roostr, roostr, bins_theta, -2, 0, bins_dm2, -1, 1.30103);
+  roostr = "h2_space_sens";
+  TH2D *h2_space_sens = new TH2D(roostr, roostr, bins_theta, -2, 0, bins_dm2, -1, 1.30103);
 
-  roostr = "h2_space_sens_xx_minus_1sigma";
-  TH2D *h2_space_sens_xx_minus_1sigma = new TH2D(roostr, roostr, bins_theta, -2, 0, bins_dm2, -1, 1.30103);
+  roostr = "h2_space_sens_plus_1sigma";
+  TH2D *h2_space_sens_plus_1sigma = new TH2D(roostr, roostr, bins_theta, -2, 0, bins_dm2, -1, 1.30103);
 
+  roostr = "h2_space_sens_minus_1sigma";
+  TH2D *h2_space_sens_minus_1sigma = new TH2D(roostr, roostr, bins_theta, -2, 0, bins_dm2, -1, 1.30103);
+
+  roostr = "h2_space_sens_plus_2sigma";
+  TH2D *h2_space_sens_plus_2sigma = new TH2D(roostr, roostr, bins_theta, -2, 0, bins_dm2, -1, 1.30103);
+
+  roostr = "h2_space_sens_minus_2sigma";
+  TH2D *h2_space_sens_minus_2sigma = new TH2D(roostr, roostr, bins_theta, -2, 0, bins_dm2, -1, 1.30103);
+
+  ////////////////////////////////////
   
-  //roostr = "out_sum.txt";
-  //roostr = "out_sum_40by40.txt";
-  roostr = "out_result_0001_0001.txt";
-  
-  ifstream InputFile(roostr, ios::in);
+  ifstream InputFile(file_roostr, ios::in);
   if(!InputFile) { cerr<<" No input-list"<<endl; exit(1); }
 
   for(int idx=1; idx<=bins_theta*bins_dm2; idx++) {
@@ -177,26 +189,59 @@ void plot_CLs()
     double d4v(0), d3v(0), dd(0), CL(0);
     InputFile>>xbin>>ybin>>d4v>>d3v>>dd>>CL;
 
-    ///
-    h2_space_data->SetBinContent(xbin, ybin, CL);
+    //////
+    double eff_d4v(0), eff_d3v(0), eff_dd(0);
 
-    ///
-    double CL_sens = 1 + TMath::Erf( (d4v-d3v)/sqrt(8*fabs(d4v)) );
-    h2_space_sens->SetBinContent(xbin, ybin, 1 - CL_sens);
-    
-    ///
-    double CL_xx_plus_1sigma = 1 + TMath::Erf( (d4v+2*sqrt(fabs(d4v)) -d3v-2*sqrt(fabs(d3v)))/sqrt(8*fabs(d4v+2*sqrt(fabs(d4v)))) );
-    h2_space_sens_xx_plus_1sigma->SetBinContent(xbin, ybin, 1 - CL_xx_plus_1sigma);
- 
-    ///
-    double CL_xx_minus_1sigma = 1 + TMath::Erf( (d4v-2*sqrt(fabs(d4v)) -d3v+2*sqrt(fabs(d3v)))/sqrt(8*fabs(d4v-2*sqrt(fabs(d4v)))) );
-    h2_space_sens_xx_minus_1sigma->SetBinContent(xbin, ybin, 1 - CL_xx_minus_1sigma);
- 
+    //////
+    eff_d4v = d4v;
+    eff_d3v = d3v;
+    eff_dd  = dd;
+    double CLs_data = 1 - func_CLs(eff_d4v, eff_d3v, eff_dd);;
+    if( fabs(CLs_data-CL)>1e-4 ) {
+      cout<<" check precision & calculation (diff>1e-4)---> "<<xbin<<"\t"<<ybin<<"\t"<<CL<<"\t"<<CLs_data<<endl;
+    }
+    h2_space_data->SetBinContent(xbin, ybin, CLs_data);
+
+    //////
+    eff_d4v = d4v;
+    eff_d3v = d3v;
+    eff_dd  = d3v;
+    double CLs_sens = 1 - func_CLs(eff_d4v, eff_d3v, eff_dd);
+    h2_space_sens->SetBinContent(xbin, ybin, CLs_sens);
+
+    //////    
+    eff_d4v = d4v;
+    eff_d3v = d3v;
+    eff_dd  = d3v - 2*sqrt( fabs(d3v) );// data result following Gauss(mean, sigma)
+    double CLs_sens_plus_1sigma = 1 - func_CLs(eff_d4v, eff_d3v, eff_dd);
+    h2_space_sens_plus_1sigma->SetBinContent(xbin, ybin, CLs_sens_plus_1sigma);
+
+    //////    
+    eff_d4v = d4v;
+    eff_d3v = d3v;
+    eff_dd  = d3v + 2*sqrt( fabs(d3v) );
+    double CLs_sens_minus_1sigma = 1 - func_CLs(eff_d4v, eff_d3v, eff_dd);
+    h2_space_sens_minus_1sigma->SetBinContent(xbin, ybin, CLs_sens_minus_1sigma);
+
+    //////    
+    eff_d4v = d4v;
+    eff_d3v = d3v;
+    eff_dd  = d3v - 2*2*sqrt( fabs(d3v) );
+    double CLs_sens_plus_2sigma = 1 - func_CLs(eff_d4v, eff_d3v, eff_dd);
+    h2_space_sens_plus_2sigma->SetBinContent(xbin, ybin, CLs_sens_plus_2sigma);
+
+    //////    
+    eff_d4v = d4v;
+    eff_d3v = d3v;
+    eff_dd  = d3v + 2*2*sqrt( fabs(d3v) );
+    double CLs_sens_minus_2sigma = 1 - func_CLs(eff_d4v, eff_d3v, eff_dd);
+    h2_space_sens_minus_2sigma->SetBinContent(xbin, ybin, CLs_sens_minus_2sigma);
+
   }
 
   int index = 0;
   
-  //////
+  ////////////////////////////////////////////////////////////
   index++;
   TGraph *gh_CLs_data[Ncontour];
   for(int idx=0; idx<Ncontour; idx++) {
@@ -207,7 +252,7 @@ void plot_CLs()
   }
   func_get_contours( h2_space_data, gh_CLs_data, index);
 
-  //////
+  ////////////////////////////////////////////////////////////
   index++;
   TGraph *gh_CLs_sens[Ncontour];
   for(int idx=0; idx<Ncontour; idx++) {
@@ -218,33 +263,107 @@ void plot_CLs()
     gh_CLs_sens[idx]->SetLineStyle( 7 );
   }
   func_get_contours( h2_space_sens, gh_CLs_sens, index);
+
+  ////////////////////////////////////////////////////////////
+  index++;
+  TGraph *gh_CLs_sens_plus_1sigma[Ncontour];
+  for(int idx=0; idx<Ncontour; idx++) {
+    roostr = TString::Format("gh_CLs_sens_plus_1sigma_%d", idx);
+    gh_CLs_sens_plus_1sigma[idx] = new TGraph();
+    gh_CLs_sens_plus_1sigma[idx]->SetName(roostr);
+    gh_CLs_sens_plus_1sigma[idx]->SetLineColor( colors[idx] );
+    gh_CLs_sens_plus_1sigma[idx]->SetLineStyle( 7 );
+  }
+  func_get_contours( h2_space_sens_plus_1sigma, gh_CLs_sens_plus_1sigma, index);
+
+  ////////////////////////////////////////////////////////////
+  index++;
+  TGraph *gh_CLs_sens_minus_1sigma[Ncontour];
+  for(int idx=0; idx<Ncontour; idx++) {
+    roostr = TString::Format("gh_CLs_sens_minus_1sigma_%d", idx);
+    gh_CLs_sens_minus_1sigma[idx] = new TGraph();
+    gh_CLs_sens_minus_1sigma[idx]->SetName(roostr);
+    gh_CLs_sens_minus_1sigma[idx]->SetLineColor( colors[idx] );
+    gh_CLs_sens_minus_1sigma[idx]->SetLineStyle( 7 );
+  }
+  func_get_contours( h2_space_sens_minus_1sigma, gh_CLs_sens_minus_1sigma, index);
+
+  ////////////////////////////////////////////////////////////
+  index++;
+  TGraph *gh_CLs_sens_plus_2sigma[Ncontour];
+  for(int idx=0; idx<Ncontour; idx++) {
+    roostr = TString::Format("gh_CLs_sens_plus_2sigma_%d", idx);
+    gh_CLs_sens_plus_2sigma[idx] = new TGraph();
+    gh_CLs_sens_plus_2sigma[idx]->SetName(roostr);
+    gh_CLs_sens_plus_2sigma[idx]->SetLineColor( colors[idx] );
+    gh_CLs_sens_plus_2sigma[idx]->SetLineStyle( 7 );
+  }
+  func_get_contours( h2_space_sens_plus_2sigma, gh_CLs_sens_plus_2sigma, index);
+
+  ////////////////////////////////////////////////////////////
+  index++;
+  TGraph *gh_CLs_sens_minus_2sigma[Ncontour];
+  for(int idx=0; idx<Ncontour; idx++) {
+    roostr = TString::Format("gh_CLs_sens_minus_2sigma_%d", idx);
+    gh_CLs_sens_minus_2sigma[idx] = new TGraph();
+    gh_CLs_sens_minus_2sigma[idx]->SetName(roostr);
+    gh_CLs_sens_minus_2sigma[idx]->SetLineColor( colors[idx] );
+    gh_CLs_sens_minus_2sigma[idx]->SetLineStyle( 7 );
+  }
+  func_get_contours( h2_space_sens_minus_2sigma, gh_CLs_sens_minus_2sigma, index);
+
+  ////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////
+
+  TGraph *gh_contour_1sigma[Ncontour];
+  for(int idx=0; idx<Ncontour; idx++) {
+    roostr = TString::Format("gh_contour_1sigma_%d", idx);
+    gh_contour_1sigma[idx] = new TGraph();
+    gh_contour_1sigma[idx]->SetName(roostr);
+    gh_contour_1sigma[idx]->SetFillColor(kGreen);
+    
+    int num_plus = gh_CLs_sens_plus_1sigma[idx]->GetN();
+    for(int ip=0; ip<num_plus; ip++) {
+      double xx(0), yy(0);
+      gh_CLs_sens_plus_1sigma[idx]->GetPoint(ip, xx, yy);
+      gh_contour_1sigma[idx]->SetPoint( gh_contour_1sigma[idx]->GetN(), xx, yy );
+    }// ip
+    
+    int num_minus = gh_CLs_sens_minus_1sigma[idx]->GetN();
+    for(int ip=num_minus-1; ip>=0; ip--) {
+      double xx(0), yy(0);
+      gh_CLs_sens_minus_1sigma[idx]->GetPoint(ip, xx, yy);
+      gh_contour_1sigma[idx]->SetPoint( gh_contour_1sigma[idx]->GetN(), xx, yy );
+    }// ip    
+      
+  }// idx
+
+
+  TGraph *gh_contour_2sigma[Ncontour];
+  for(int idx=0; idx<Ncontour; idx++) {
+    roostr = TString::Format("gh_contour_2sigma_%d", idx);
+    gh_contour_2sigma[idx] = new TGraph();
+    gh_contour_2sigma[idx]->SetName(roostr);
+    gh_contour_2sigma[idx]->SetFillColor(kYellow);
+    
+    int num_plus = gh_CLs_sens_plus_2sigma[idx]->GetN();
+    for(int ip=0; ip<num_plus; ip++) {
+      double xx(0), yy(0);
+      gh_CLs_sens_plus_2sigma[idx]->GetPoint(ip, xx, yy);
+      gh_contour_2sigma[idx]->SetPoint( gh_contour_2sigma[idx]->GetN(), xx, yy );
+    }// ip
+    
+    int num_minus = gh_CLs_sens_minus_2sigma[idx]->GetN();
+    for(int ip=num_minus-1; ip>=0; ip--) {
+      double xx(0), yy(0);
+      gh_CLs_sens_minus_2sigma[idx]->GetPoint(ip, xx, yy);
+      gh_contour_2sigma[idx]->SetPoint( gh_contour_2sigma[idx]->GetN(), xx, yy );
+    }// ip    
+      
+  }// idx
   
-  //////
-  index++;
-  TGraph *gh_CLs_sens_xx_plus_1sigma[Ncontour];
-  for(int idx=0; idx<Ncontour; idx++) {
-    roostr = TString::Format("gh_CLs_sens_xx_plus_1sigma_%d", idx);
-    gh_CLs_sens_xx_plus_1sigma[idx] = new TGraph();
-    gh_CLs_sens_xx_plus_1sigma[idx]->SetName(roostr);
-    gh_CLs_sens_xx_plus_1sigma[idx]->SetLineColor( colors[idx] );
-    gh_CLs_sens_xx_plus_1sigma[idx]->SetLineStyle( 7 );
-    gh_CLs_sens_xx_plus_1sigma[idx]->SetLineWidth( 4 );
-  }
-  func_get_contours( h2_space_sens_xx_plus_1sigma, gh_CLs_sens_xx_plus_1sigma, index);
-
-  //////
-  index++;
-  TGraph *gh_CLs_sens_xx_minus_1sigma[Ncontour];
-  for(int idx=0; idx<Ncontour; idx++) {
-    roostr = TString::Format("gh_CLs_sens_xx_minus_1sigma_%d", idx);
-    gh_CLs_sens_xx_minus_1sigma[idx] = new TGraph();
-    gh_CLs_sens_xx_minus_1sigma[idx]->SetName(roostr);
-    gh_CLs_sens_xx_minus_1sigma[idx]->SetLineColor( colors[idx] );
-    gh_CLs_sens_xx_minus_1sigma[idx]->SetLineStyle( 7 );
-    gh_CLs_sens_xx_minus_1sigma[idx]->SetLineWidth( 4 );
-  }
-  func_get_contours( h2_space_sens_xx_minus_1sigma, gh_CLs_sens_xx_minus_1sigma, index);
-
+  
+  ////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////
     
   double xxlow = h2_space_data->GetXaxis()->GetBinLowEdge(1);
@@ -267,11 +386,9 @@ void plot_CLs()
   canv_h2_basic_CLs_data->SetLogy();
   h2_basic_CLs_data->Draw();
   h2_basic_CLs_data->SetXTitle("sin^{2}2#theta_{14}");
-  h2_basic_CLs_data->SetYTitle("#Deltam^{2}_{41} [eV^{2}]");
+  h2_basic_CLs_data->SetYTitle("#Deltam^{2}_{41} (eV^{2})");
   h2_basic_CLs_data->GetXaxis()->CenterTitle(1);
   h2_basic_CLs_data->GetYaxis()->CenterTitle(1);
-  h2_basic_CLs_data->GetXaxis()->SetTitleOffset(1.25);
-  h2_basic_CLs_data->GetYaxis()->SetTitleOffset(1.1);
 
   h2_basic_CLs_data->GetYaxis()->SetLabelSize(0.045);
   h2_basic_CLs_data->GetYaxis()->SetTitleSize(0.045);    
@@ -279,29 +396,18 @@ void plot_CLs()
   h2_basic_CLs_data->GetXaxis()->SetTitleSize(0.045);
   h2_basic_CLs_data->GetYaxis()->SetTitleOffset(1.4);
   h2_basic_CLs_data->GetXaxis()->SetTitleOffset(1.4);
-   
-  //gh_CLs_sens_xx_plus_1sigma[1]->Draw("same l");
-  //gh_CLs_sens_xx_minus_1sigma[1]->Draw("same l");
-  TGraph *gh_CLs_sens_95_pm_1sigma = new TGraph();
-  for(int idx=0; idx<gh_CLs_sens_xx_plus_1sigma[1]->GetN(); idx++) {
-    double xx(0), yy(0);
-    gh_CLs_sens_xx_plus_1sigma[1]->GetPoint(idx,xx,yy);
-    gh_CLs_sens_95_pm_1sigma->SetPoint( gh_CLs_sens_95_pm_1sigma->GetN(), xx, yy );
-  }
-  for(int idx=gh_CLs_sens_xx_minus_1sigma[1]->GetN()-1; idx>=0; idx--) {
-    double xx(0), yy(0);
-    gh_CLs_sens_xx_minus_1sigma[1]->GetPoint(idx,xx,yy);
-    gh_CLs_sens_95_pm_1sigma->SetPoint( gh_CLs_sens_95_pm_1sigma->GetN(), xx, yy );
-  }
-  gh_CLs_sens_95_pm_1sigma->Draw("same f");
-  gh_CLs_sens_95_pm_1sigma->SetFillColor(kGreen);
-   
-  for(int ic=0; ic<3; ic++) {
-    if( ic==0 ) continue;
-    if( ic==2 ) continue;
-    gh_CLs_data[ic]->Draw("same l");
-    gh_CLs_sens[ic]->Draw("same l");
-  }
+
+  ////////////////////
+  
+  int index_95 = 1;
+  
+  gh_contour_2sigma[index_95]->Draw("same f");
+ 
+  gh_contour_1sigma[index_95]->Draw("same f");
+
+  gh_CLs_data[index_95]->Draw("same l");
+  
+  gh_CLs_sens[index_95]->Draw("same l");
 
   TGraph *gh_n4 = new TGraph();
   gh_n4->SetPoint(0, 0.26, 7.25);
@@ -314,21 +420,6 @@ void plot_CLs()
   gh_RAA->SetMarkerStyle(20);
   gh_RAA->SetMarkerSize(1.8);
   gh_RAA->Draw("same p");
-
-  TLegend *lg_data = new TLegend(0.18-0.02,0.22,0.48-0.02,0.45);
-  lg_data->SetFillStyle(0);
-  lg_data->SetBorderSize(0);
-  //lg_data->AddEntry(gh_CLs_data[0], "CL_{s} exclusion, 90% CL", "l");
-  lg_data->AddEntry(gh_CLs_data[1], "CL_{s} exclusion, 95% CL", "l");
-  //lg_data->AddEntry(gh_CLs_data[2], "CL_{s} exclusion, 99.73% CL", "l");
-  lg_data->AddEntry( gh_n4, "Neutrino-4 best-fit", "p" );
-  lg_data->AddEntry( gh_RAA, "SBL+Gallium Anomaly (RAA)", "p" );
-  lg_data->Draw();
-  lg_data->SetTextSize(0.045);
-  lg_data->SetTextFont(132);
-  lg_data->Draw();
-
-  canv_h2_basic_CLs_data->SaveAs("canv_h2_basic_CLs_data.png");
-
   
+
 }
