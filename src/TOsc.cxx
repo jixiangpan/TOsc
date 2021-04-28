@@ -72,7 +72,6 @@ void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, b
 	TMatrixD matrix_data = matrix_dataFIT_newworld;          
 	TMatrixD matrix_pred = matrix_pred_newworld;      
 	TMatrixD matrix_cov_syst = matrix_syst_abs_total_newworld;;
-      
 	int bins_fit = matrix_cov_syst.GetNrows();
       
 	for(int idx=0; idx<bins_fit; idx++) {
@@ -80,16 +79,13 @@ void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, b
 	  double val_data = matrix_data(0, idx);
 	  double val_pred = matrix_pred(0, idx);
         
-	  if( val_data==0 ) {
-	    val_stat_cov = val_pred/2;
-	  }
+	  if( val_data==0 ) { val_stat_cov = val_pred/2; }
 	  else {
 	    if( val_pred!=0 ) val_stat_cov = 3./( 1./val_data + 2./val_pred );
 	    else val_stat_cov = val_data;
 	  }
 	
 	  matrix_cov_syst(idx, idx) += val_stat_cov;
-
 	  if( matrix_cov_syst(idx, idx)==0 ) matrix_cov_syst(idx, idx) = 1e-6;
 	}
 
@@ -97,7 +93,6 @@ void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, b
 	TMatrixD matrix_cov_total = matrix_cov_syst;
 	TMatrixD matrix_cov_total_inv = matrix_cov_total; matrix_cov_total_inv.Invert();
       
-	////////
 	TMatrixD matrix_delta = matrix_pred - matrix_data;
 	TMatrixD matrix_delta_T = matrix_delta.T(); matrix_delta.T();
    
@@ -164,7 +159,6 @@ void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, b
     TMatrixD matrix_data = matrix_dataFIT_newworld;          
     TMatrixD matrix_pred = matrix_pred_newworld;      
     TMatrixD matrix_cov_syst = matrix_syst_abs_total_newworld;;
-      
     int bins_fit = matrix_cov_syst.GetNrows();
       
     for(int idx=0; idx<bins_fit; idx++) {
@@ -172,18 +166,13 @@ void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, b
       double val_data = matrix_data(0, idx);
       double val_pred = matrix_pred(0, idx);
         
-      if( val_data==0 ) {
-	val_stat_cov = val_pred/2;
-      }
+      if( val_data==0 ) { val_stat_cov = val_pred/2; }
       else {
 	if( val_pred!=0 ) val_stat_cov = 3./( 1./val_data + 2./val_pred );
 	else val_stat_cov = val_data;
       }
-
-      //val_stat_cov = val_pred;// Pearson format
-      
+	
       matrix_cov_syst(idx, idx) += val_stat_cov;
-
       if( matrix_cov_syst(idx, idx)==0 ) matrix_cov_syst(idx, idx) = 1e-6;
     }
 
@@ -191,12 +180,11 @@ void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, b
     TMatrixD matrix_cov_total = matrix_cov_syst;
     TMatrixD matrix_cov_total_inv = matrix_cov_total; matrix_cov_total_inv.Invert();
       
-    ////////
     TMatrixD matrix_delta = matrix_pred - matrix_data;
     TMatrixD matrix_delta_T = matrix_delta.T(); matrix_delta.T();
    
     TMatrixD matrix_chi2 = matrix_delta * matrix_cov_total_inv *matrix_delta_T;
-    chi2 = matrix_chi2(0,0);      
+    chi2 = matrix_chi2(0,0);   
 
     minimization_chi2 = chi2;
 	

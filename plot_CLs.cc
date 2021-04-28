@@ -400,14 +400,19 @@ void plot_CLs()
   ////////////////////
   
   int index_95 = 1;
+  int index_99 = 2;
   
-  gh_contour_2sigma[index_95]->Draw("same f");
- 
+  gh_contour_2sigma[index_95]->Draw("same f"); 
   gh_contour_1sigma[index_95]->Draw("same f");
 
-  gh_CLs_data[index_95]->Draw("same l");
-  
+  //gh_contour_2sigma[index_99]->Draw("same f"); 
+  //gh_contour_1sigma[index_99]->Draw("same f");
+
+  gh_CLs_data[index_95]->Draw("same l");  
   gh_CLs_sens[index_95]->Draw("same l");
+
+  //gh_CLs_data[index_99]->Draw("same l");  
+  //gh_CLs_sens[index_99]->Draw("same l");
 
   TGraph *gh_n4 = new TGraph();
   gh_n4->SetPoint(0, 0.26, 7.25);
@@ -421,5 +426,5 @@ void plot_CLs()
   gh_RAA->SetMarkerSize(1.8);
   gh_RAA->Draw("same p");
   
-
+  canv_h2_basic_CLs_data->SaveAs("canv_h2_basic_CLs_data.png");
 }
