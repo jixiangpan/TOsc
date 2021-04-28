@@ -750,10 +750,9 @@ void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_
 	else if(idx<=16) matrix_syst_frac_geant_before[xbin][ybin] += (*matrix_temp);
 	else matrix_syst_frac_Xs_before[xbin][ybin] += (*matrix_temp);
 	delete matrix_temp;
-	delete file_temp;
-	
+	delete file_temp;	
       }
-      
+
       /////////////////////////////////////////// MCstat
       
       roostr = flux_geant_Xs_file_dir+TString::Format("result_syst_%d_%d/mc_stat/0.log", xbin, ybin);
@@ -783,7 +782,7 @@ void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_
 	}
       }// idx
       cppfile_temp.close();
-      
+ 
     }// ybin
   }// xbin
     

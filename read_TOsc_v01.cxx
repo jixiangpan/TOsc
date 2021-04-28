@@ -306,7 +306,7 @@ int main(int argc, char** argv)
       cout<<TString::Format(" ---> processing %4d/%4d", ibin, bins_theta)<<endl;
       
       for(int jbin=1; jbin<=bins_dm2; jbin++) {
-	cout<<TString::Format(" ---> processing sub %4d - %4d", ibin, jbin)<<endl;
+	//cout<<TString::Format(" ---> processing sub %4d - %4d", ibin, jbin)<<endl;
 	
 	double xcenter = h2_space->GetXaxis()->GetBinCenter(ibin);
 	double ycenter = h2_space->GetYaxis()->GetBinCenter(jbin);
