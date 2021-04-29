@@ -337,62 +337,58 @@ void TOsc::Set_Collapse()
     //cout<<" Using the syst covariance assuming no oscillation"<<endl;
   }
   
-  ///////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////// begin to read the syst
 
-  TString flux_geant_Xs_file_dir = g_flux_geant_Xs_file_dir;
+  {
+    TString flux_geant_Xs_file_dir = g_flux_geant_Xs_file_dir;
+
+    int ibin = xbin;
+    int jbin = ybin;
   
-  for(int ibin=xbin; ibin<=xbin; ibin++) {
-    //cout<<TString::Format(" ---> initializing ibin %3d / %3d", ibin, bins_theta)<<endl;
-    
-    for(int jbin=ybin; jbin<=ybin; jbin++) {      
-      if( jbin==0 && ibin!=0 ) continue;
-      if( ibin==0 && jbin!=0 ) continue;
-
-      matrix_syst_frac_flux_before.clear();
-      matrix_syst_frac_geant_before.clear();
-      matrix_syst_frac_Xs_before.clear();
-      matrix_syst_frac_detector_before.clear();
-      matrix_syst_frac_additional_before.clear();      
+    matrix_syst_frac_flux_before.clear();
+    matrix_syst_frac_geant_before.clear();
+    matrix_syst_frac_Xs_before.clear();
+    matrix_syst_frac_detector_before.clear();
+    matrix_syst_frac_additional_before.clear();      
       
-      matrix_syst_frac_flux_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
-      matrix_syst_frac_flux_before[ibin][jbin].Clear();
-      matrix_syst_frac_flux_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
+    matrix_syst_frac_flux_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
+    matrix_syst_frac_flux_before[ibin][jbin].Clear();
+    matrix_syst_frac_flux_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
            
-      matrix_syst_frac_geant_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
-      matrix_syst_frac_geant_before[ibin][jbin].Clear();
-      matrix_syst_frac_geant_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
+    matrix_syst_frac_geant_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
+    matrix_syst_frac_geant_before[ibin][jbin].Clear();
+    matrix_syst_frac_geant_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
           
-      matrix_syst_frac_Xs_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
-      matrix_syst_frac_Xs_before[ibin][jbin].Clear();
-      matrix_syst_frac_Xs_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
+    matrix_syst_frac_Xs_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
+    matrix_syst_frac_Xs_before[ibin][jbin].Clear();
+    matrix_syst_frac_Xs_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
           
-      matrix_syst_frac_detector_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
-      matrix_syst_frac_detector_before[ibin][jbin].Clear();
-      matrix_syst_frac_detector_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
+    matrix_syst_frac_detector_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
+    matrix_syst_frac_detector_before[ibin][jbin].Clear();
+    matrix_syst_frac_detector_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
            
-      matrix_syst_frac_additional_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
-      matrix_syst_frac_additional_before[ibin][jbin].Clear();
-      matrix_syst_frac_additional_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
+    matrix_syst_frac_additional_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
+    matrix_syst_frac_additional_before[ibin][jbin].Clear();
+    matrix_syst_frac_additional_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
 
-      /////////////////////////////////////////// flux_geant_Xs
+    /////////////////////////////////////////// flux_geant_Xs
       
-      for( int idx=1; idx<=17; idx++ ) {
+    for( int idx=1; idx<=17; idx++ ) {
 	
-	roostr = flux_geant_Xs_file_dir+TString::Format("result_syst_%d_%d/XsFlux/cov_%d.root", ibin, jbin, idx);
+      roostr = flux_geant_Xs_file_dir+TString::Format("result_syst_%d_%d/XsFlux/cov_%d.root", ibin, jbin, idx);
 	
-	TFile *file_temp = new TFile(roostr, "read");	
-	TMatrixD *matrix_temp = (TMatrixD*)file_temp->Get( TString::Format("frac_cov_xf_mat_%d",idx) );
-	if(idx<=13) matrix_syst_frac_flux_before[ibin][jbin] += (*matrix_temp);
-	else if(idx<=16) matrix_syst_frac_geant_before[ibin][jbin] += (*matrix_temp);
-	else matrix_syst_frac_Xs_before[ibin][jbin] += (*matrix_temp);
-	delete matrix_temp;
-	delete file_temp;	
-      }
-      
-    }// jbin
-  }// ibin
-
-  ///////////////////////////////////////////////////////////////////////
+      TFile *file_temp = new TFile(roostr, "read");	
+      TMatrixD *matrix_temp = (TMatrixD*)file_temp->Get( TString::Format("frac_cov_xf_mat_%d",idx) );
+      if(idx<=13) matrix_syst_frac_flux_before[ibin][jbin] += (*matrix_temp);
+      else if(idx<=16) matrix_syst_frac_geant_before[ibin][jbin] += (*matrix_temp);
+      else matrix_syst_frac_Xs_before[ibin][jbin] += (*matrix_temp);
+      delete matrix_temp;
+      delete file_temp;	
+    }
+  
+  }
+  
+  /////////////////////////////////////////////////////////////////////// end to read the syst
 
   
   TMatrixD matrix_syst_abs_flux_before = matrix_syst_frac_flux_before[xbin][ybin];

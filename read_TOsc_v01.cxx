@@ -416,7 +416,7 @@ int main(int argc, char** argv)
   
   //////////////////////////////////////////////////////// for whole scan at one time
   
-  if( 1 ) {
+  if( 0 ) {
 
     cout<<endl<<" ---> for whole scan at one time"<<endl<<endl;
     
