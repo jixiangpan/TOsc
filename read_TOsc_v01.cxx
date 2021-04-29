@@ -153,7 +153,11 @@ int main(int argc, char** argv)
   // Osc_test->Minimization_OscPars_FullCov(0.1, 1.8, 1);
 
   if( 0 ) {// best-fit value
-    
+    Osc_test->Set_OscPars(0.02, 1);
+    Osc_test->Set_Collapse();
+    Osc_test->Set_data2dataFIT();
+    //Osc_test->Set_Asimov2dataFIT();
+    Osc_test->Minimization_OscPars_FullCov(0.01, 0.1, 0);
   }
   
   //////////////////////////////////////////////////////// for one point
@@ -297,7 +301,7 @@ int main(int argc, char** argv)
   
   //////////////////////////////////////////////////////// for whole scan at one time
   
-  if( 1 ) {
+  if( 0 ) {
 
     cout<<endl<<" ---> for whole scan at one time"<<endl<<endl;
     
