@@ -67,12 +67,12 @@ void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, b
 
 	Set_OscPars(s22theta, dm2);
 	Set_Collapse();      
-
+	
 	/////////
-	TMatrixD matrix_data = matrix_dataFIT_newworld;          
-	TMatrixD matrix_pred = matrix_pred_newworld;      
-	TMatrixD matrix_cov_syst = matrix_syst_abs_total_newworld;;
-	int bins_fit = matrix_cov_syst.GetNrows();
+	TMatrixD matrix_data = matrix_dataFIT;          
+	TMatrixD matrix_pred = matrix_predFIT;      
+	TMatrixD matrix_syst = matrix_systFIT;
+	int bins_fit = matrix_syst.GetNrows();
       
 	for(int idx=0; idx<bins_fit; idx++) {
 	  double val_stat_cov = 0;        
@@ -85,12 +85,12 @@ void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, b
 	    else val_stat_cov = val_data;
 	  }
 	
-	  matrix_cov_syst(idx, idx) += val_stat_cov;
-	  if( matrix_cov_syst(idx, idx)==0 ) matrix_cov_syst(idx, idx) = 1e-6;
+	  matrix_syst(idx, idx) += val_stat_cov;
+	  if( matrix_syst(idx, idx)==0 ) matrix_syst(idx, idx) = 1e-6;
 	}
 
 	/////////
-	TMatrixD matrix_cov_total = matrix_cov_syst;
+	TMatrixD matrix_cov_total = matrix_syst;
 	TMatrixD matrix_cov_total_inv = matrix_cov_total; matrix_cov_total_inv.Invert();
       
 	TMatrixD matrix_delta = matrix_pred - matrix_data;
@@ -147,20 +147,20 @@ void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, b
   /////////////////////////////////////////////
   
   if( flag_fixed ) {
-    
+
     double chi2 = 0;
     double s22theta = init_s22theta;
     double dm2      = init_dm2;
 
     Set_OscPars(s22theta, dm2);
     Set_Collapse();      
+    
+    /////////
+    TMatrixD matrix_data = matrix_dataFIT;          
+    TMatrixD matrix_pred = matrix_predFIT;      
+    TMatrixD matrix_syst = matrix_systFIT;
+    int bins_fit = matrix_syst.GetNrows();
 
-    /////////    
-    TMatrixD matrix_data = matrix_dataFIT_newworld;          
-    TMatrixD matrix_pred = matrix_pred_newworld;      
-    TMatrixD matrix_cov_syst = matrix_syst_abs_total_newworld;;
-    int bins_fit = matrix_cov_syst.GetNrows();
-      
     for(int idx=0; idx<bins_fit; idx++) {
       double val_stat_cov = 0;        
       double val_data = matrix_data(0, idx);
@@ -172,24 +172,90 @@ void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, b
 	else val_stat_cov = val_data;
       }
 	
-      matrix_cov_syst(idx, idx) += val_stat_cov;
-      if( matrix_cov_syst(idx, idx)==0 ) matrix_cov_syst(idx, idx) = 1e-6;
+      matrix_syst(idx, idx) += val_stat_cov;
+      if( matrix_syst(idx, idx)==0 ) matrix_syst(idx, idx) = 1e-6;
     }
-
+    
     /////////
-    TMatrixD matrix_cov_total = matrix_cov_syst;
+    TMatrixD matrix_cov_total = matrix_syst;
     TMatrixD matrix_cov_total_inv = matrix_cov_total; matrix_cov_total_inv.Invert();
       
     TMatrixD matrix_delta = matrix_pred - matrix_data;
     TMatrixD matrix_delta_T = matrix_delta.T(); matrix_delta.T();
    
     TMatrixD matrix_chi2 = matrix_delta * matrix_cov_total_inv *matrix_delta_T;
-    chi2 = matrix_chi2(0,0);   
+    chi2 = matrix_chi2(0,0);  
 
     minimization_chi2 = chi2;
 	
   }// flag_fixed
  
+}
+
+//// ccc
+void TOsc::Set_EffectiveInput2FIT()
+{
+  
+  if( !flag_FIT_after_constraint ) {
+    matrix_data_realdforFIT.Clear(); matrix_data_realdforFIT.ResizeTo(1, bins_newworld);
+    matrix_pred_asimvforFIT.Clear(); matrix_pred_asimvforFIT.ResizeTo(1, bins_newworld);
+    matrix_predFIT.Clear(); matrix_predFIT.ResizeTo(1, bins_newworld);
+    matrix_systFIT.Clear(); matrix_systFIT.ResizeTo(bins_newworld, bins_newworld);
+      
+    matrix_data_realdforFIT = matrix_data_newworld;
+    matrix_pred_asimvforFIT = matrix_pred_newworld;
+    matrix_predFIT = matrix_pred_newworld;
+    matrix_systFIT = matrix_syst_abs_total_newworld;   
+  }
+  else {
+
+    /// Y constrained by X
+    int num_Y = ((int)map_data_spectrum_ch_bin[1].size()) + ((int)map_data_spectrum_ch_bin[2].size());// nue FC and PC
+    int num_X = bins_newworld - num_Y;
+    
+    TMatrixD matrix_pred_Y  = matrix_pred_newworld.GetSub(0, 0, 0, num_Y-1);
+    TMatrixD matrix_data_Y  = matrix_data_newworld.GetSub(0, 0, 0, num_Y-1);
+    TMatrixD matrix_YY = matrix_syst_abs_total_newworld.GetSub(0, num_Y-1, 0, num_Y-1);
+
+    ///
+    TMatrixD matrix_pred_X  = matrix_pred_newworld.GetSub(0, 0, num_Y, num_Y+num_X-1);
+    TMatrixD matrix_data_X  = matrix_data_newworld.GetSub(0, 0, num_Y, num_Y+num_X-1);
+    TMatrixD matrix_XX = matrix_syst_abs_total_newworld.GetSub(num_Y, num_Y+num_X-1, num_Y, num_Y+num_X-1);
+    for(int idx=0; idx<num_X; idx++) {
+      double val_stat_cov = 0;
+      double val_data = matrix_data_X(0, idx);
+      double val_pred = matrix_pred_X(0, idx);      
+      if( val_data==0 ) { val_stat_cov = val_pred/2; }
+      else {
+	if( val_pred!=0 ) val_stat_cov = 3./( 1./val_data + 2./val_pred );
+	else val_stat_cov = val_data;
+      }
+      matrix_XX(idx, idx) += val_stat_cov;// CNP format
+      if( matrix_XX(idx, idx)==0 ) matrix_XX(idx, idx) = 1e-6;
+    }// for(int idx=0; idx<num_X; idx++)
+    
+    TMatrixD matrix_XX_inv = matrix_XX; matrix_XX_inv.Invert();
+    
+    TMatrixD matrix_YX = matrix_syst_abs_total_newworld.GetSub(0, num_Y-1, num_Y, num_Y+num_X-1);
+    TMatrixD matrix_XY = matrix_YX.T(); matrix_YX.T();
+
+    ///
+    TMatrixD matrix_Y_under_X = matrix_pred_Y + (matrix_YX * matrix_XX_inv * (matrix_data_X - matrix_pred_X).T()).T();
+    TMatrixD matrix_YY_under_XX = matrix_YY - matrix_YX * matrix_XX_inv * matrix_XY;
+
+    ///
+    matrix_data_realdforFIT.Clear(); matrix_data_realdforFIT.ResizeTo(1, num_Y);
+    matrix_pred_asimvforFIT.Clear(); matrix_pred_asimvforFIT.ResizeTo(1, num_Y);
+    matrix_predFIT.Clear(); matrix_predFIT.ResizeTo(1, num_Y);
+    matrix_systFIT.Clear(); matrix_systFIT.ResizeTo(num_Y, num_Y);
+      
+    matrix_data_realdforFIT = matrix_data_Y;
+    matrix_pred_asimvforFIT = matrix_Y_under_X;
+    matrix_predFIT = matrix_Y_under_X;
+    matrix_systFIT = matrix_YY_under_XX;
+    
+  }// else
+  
 }
 
 //// ccc
@@ -299,6 +365,10 @@ void TOsc::Set_Collapse()
   if(flag_syst_detector)   matrix_syst_abs_total_newworld += matrix_syst_abs_detector_newworld;
   if(flag_syst_additional) matrix_syst_abs_total_newworld += matrix_syst_abs_additional_newworld;
   if(flag_syst_MCstat)     matrix_syst_abs_total_newworld += matrix_syst_abs_MCstat_newworld;
+
+  ///////////////////////////////////////
+  
+  Set_EffectiveInput2FIT();
 
 }
 
@@ -448,7 +518,7 @@ void TOsc::Apply_POT_scaled()
 }
 
 //// ccc
-void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_afterscale_file, TString centralvalue_noosc_file, TString flux_geant_Xs_file_dir, TString detector_file_dir, TString MCstat_file_dir)
+void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_afterscale_file, TString centralvalue_noosc_file, TString flux_geant_Xs_file_dir)
 {
   cout<<endl<<" ---> Set_Spectra_MatrixCov"<<endl<<endl;
 
@@ -774,11 +844,6 @@ void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_
     }// ybin
   }// xbin
     
-  //////////////////////////////////////
-  
-  matrix_dataFIT_newworld.Clear();
-  matrix_dataFIT_newworld.ResizeTo(1, bins_newworld);
-  
   //////////////////////////////////////
   
   cout<<endl;

@@ -147,8 +147,15 @@ class TOsc {
   bool flag_syst_MCstat;
 
   ////////////////////
-
-  TMatrixD matrix_dataFIT_newworld;
+  
+  bool flag_FIT_after_constraint;
+    
+  TMatrixD matrix_data_realdforFIT;
+  TMatrixD matrix_pred_asimvforFIT;
+  
+  TMatrixD matrix_dataFIT;
+  TMatrixD matrix_predFIT;
+  TMatrixD matrix_systFIT;
 
   int    minimization_status;
   double minimization_chi2;
@@ -172,7 +179,7 @@ class TOsc {
     return weight;
   }
 
-  void Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_afterscale_file, TString centralvalue_noosc_file, TString flux_geant_Xs_file_dir, TString detector_file_dir, TString MCstat_file_dir);
+  void Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_afterscale_file, TString centralvalue_noosc_file, TString flux_geant_Xs_file_dir);
   
   void Apply_POT_scaled();
 
@@ -181,9 +188,17 @@ class TOsc {
 
   void Set_Collapse();
 
-  void Set_Asimov2dataFIT() { matrix_dataFIT_newworld = matrix_pred_newworld; }
+  void Set_EffectiveInput2FIT();
 
-  void Set_data2dataFIT() { matrix_dataFIT_newworld = matrix_data_newworld; }
+  void Set_Asimov2dataFIT() {
+    matrix_dataFIT.Clear(); matrix_dataFIT.ResizeTo( 1, matrix_pred_asimvforFIT.GetNcols() );
+    matrix_dataFIT = matrix_pred_asimvforFIT;
+  }
+
+  void Set_data2dataFIT() {
+    matrix_dataFIT.Clear(); matrix_dataFIT.ResizeTo( 1, matrix_data_realdforFIT.GetNcols() );
+    matrix_dataFIT = matrix_data_realdforFIT;
+  }
   
   void Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, bool flag_fixed);
 };

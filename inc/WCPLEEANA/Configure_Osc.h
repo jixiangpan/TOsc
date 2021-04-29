@@ -27,5 +27,6 @@ namespace config_Osc
   bool flag_syst_additional = 0;
   bool flag_syst_MCstat     = 1;
 
-
+  bool flag_FIT_after_constraint = 1;
+  
 }

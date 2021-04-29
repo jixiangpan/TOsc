@@ -120,7 +120,7 @@ int main(int argc, char** argv)
   Osc_test->Set_Spectra_MatrixCov(config_Osc::eventlist_dir,
 				  config_Osc::event_summation_afterscale_file,
 				  config_Osc::centralvalue_noosc_file,
-				  config_Osc::syst_result_dir, "d", "e");
+				  config_Osc::syst_result_dir);
   
   Osc_test->scaleF_POT = scaleF_POT;  
   Osc_test->Apply_POT_scaled();
@@ -133,6 +133,8 @@ int main(int argc, char** argv)
   Osc_test->flag_syst_detector   = config_Osc::flag_syst_detector;
   Osc_test->flag_syst_additional = config_Osc::flag_syst_additional;
   Osc_test->flag_syst_MCstat     = config_Osc::flag_syst_MCstat;
+
+  Osc_test->flag_FIT_after_constraint = config_Osc::flag_FIT_after_constraint;
   
   //////////
 
@@ -149,6 +151,10 @@ int main(int argc, char** argv)
   // Osc_test->Set_Asimov2dataFIT();
   // Osc_test->Set_data2dataFIT();  
   // Osc_test->Minimization_OscPars_FullCov(0.1, 1.8, 1);
+
+  if( 0 ) {// best-fit value
+    
+  }
   
   //////////////////////////////////////////////////////// for one point
   
@@ -291,7 +297,7 @@ int main(int argc, char** argv)
   
   //////////////////////////////////////////////////////// for whole scan at one time
   
-  if( 0 ) {
+  if( 1 ) {
 
     cout<<endl<<" ---> for whole scan at one time"<<endl<<endl;
     
@@ -328,14 +334,16 @@ int main(int argc, char** argv)
 	Osc_test->Set_Asimov2dataFIT();
 	Osc_test->Minimization_OscPars_FullCov(0, 7.25, 1);
 	dchi2_4vAsimov = (-Osc_test->minimization_chi2);
-
+	double chi2_3v_on_4vAsimov = Osc_test->minimization_chi2;
+	
 	/////////////////////////////////// 3v Asimov  
 	Osc_test->Set_OscPars(0, 1);
 	Osc_test->Set_Collapse();
 	Osc_test->Set_Asimov2dataFIT();
 	Osc_test->Minimization_OscPars_FullCov(test_s22theta, test_dm2, 1);
 	dchi2_3vAsimov = Osc_test->minimization_chi2;
-
+	double chi2_4v_on_3vAsimov = Osc_test->minimization_chi2;
+	
 	/////////////////////////////////// data
   
 	Osc_test->Set_data2dataFIT();
@@ -368,12 +376,38 @@ int main(int argc, char** argv)
 				   delta_4v, delta_3v, delta_dd, CL
 				   )<<endl;
 	ListWrite.close();
+
+	///////
+	///////
+	
+	roostr = TString::Format("qfo_result_%04d_%04d.txt", ibin, jbin);
+	ofstream ListWrite_qfo(roostr, ios::out|ios::trunc);
+	ListWrite_qfo<<TString::Format("%4d %4d %20.12f %20.12f %20.12f %20.12f %10.6f %10.6ff",
+				       ibin, jbin,
+				       chi2_4v_on_data,
+				       chi2_3v_on_data,				       
+				       chi2_4v_on_3vAsimov,
+				       chi2_3v_on_4vAsimov,
+				       test_s22theta, test_dm2
+				       )<<endl;
+	ListWrite.close();
 	
       }// jbin
     }// ibin
           
   }
 
+  ///////////////////////////////////////////////////////////////
+
+  cout<<endl;
+  cout<<" flag_syst_flux       "<<Osc_test->flag_syst_flux<<endl;
+  cout<<" flag_syst_geant      "<<Osc_test->flag_syst_geant<<endl;
+  cout<<" flag_syst_Xs         "<<Osc_test->flag_syst_Xs<<endl;
+  cout<<" flag_syst_detector   "<<Osc_test->flag_syst_detector<<endl;
+  cout<<" flag_syst_additional "<<Osc_test->flag_syst_additional<<endl;
+  cout<<" flag_syst_MCstat     "<<Osc_test->flag_syst_MCstat<<endl;
+  cout<<endl;
+  
   ///////////////////////////////////////////////////////////////
   
   if( config_Osc::flag_display_graphics ) {

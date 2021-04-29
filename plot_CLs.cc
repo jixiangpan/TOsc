@@ -153,7 +153,7 @@ void plot_CLs()
   
   ////////////////////////////////////////////////////////////////////////////////////////
   
-  TString file_roostr = "sum_40by40.txt";
+  TString file_roostr = "sum_40by40_2ch.txt";
   
   int bins_theta = 40;
   int bins_dm2   = 40;
