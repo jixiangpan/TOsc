@@ -97,6 +97,8 @@ class TOsc {
   // validation: sum (events_list_file * events_scaleF) = events_summation_afterscale_file
 
   map<int, TH1F*>map_h1f_basic_nue_binning;
+
+  TString g_flux_geant_Xs_file_dir;
   
   TMatrixD matrix_transform;
   int bins_oldworld;

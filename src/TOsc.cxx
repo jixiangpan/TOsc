@@ -314,6 +314,8 @@ void TOsc::Set_Collapse()
   
   /////////////////////////////////////// central value
 
+  TString roostr = "";
+  
   matrix_pred_newworld.ResizeTo(1, bins_newworld);
   matrix_pred_newworld.Clear();
   matrix_pred_newworld.ResizeTo(1, bins_newworld);
@@ -335,8 +337,64 @@ void TOsc::Set_Collapse()
     //cout<<" Using the syst covariance assuming no oscillation"<<endl;
   }
   
-  ////////////////
+  ///////////////////////////////////////////////////////////////////////
 
+  TString flux_geant_Xs_file_dir = g_flux_geant_Xs_file_dir;
+  
+  for(int ibin=xbin; ibin<=xbin; ibin++) {
+    //cout<<TString::Format(" ---> initializing ibin %3d / %3d", ibin, bins_theta)<<endl;
+    
+    for(int jbin=ybin; jbin<=ybin; jbin++) {      
+      if( jbin==0 && ibin!=0 ) continue;
+      if( ibin==0 && jbin!=0 ) continue;
+
+      matrix_syst_frac_flux_before.clear();
+      matrix_syst_frac_geant_before.clear();
+      matrix_syst_frac_Xs_before.clear();
+      matrix_syst_frac_detector_before.clear();
+      matrix_syst_frac_additional_before.clear();      
+      
+      matrix_syst_frac_flux_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
+      matrix_syst_frac_flux_before[ibin][jbin].Clear();
+      matrix_syst_frac_flux_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
+           
+      matrix_syst_frac_geant_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
+      matrix_syst_frac_geant_before[ibin][jbin].Clear();
+      matrix_syst_frac_geant_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
+          
+      matrix_syst_frac_Xs_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
+      matrix_syst_frac_Xs_before[ibin][jbin].Clear();
+      matrix_syst_frac_Xs_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
+          
+      matrix_syst_frac_detector_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
+      matrix_syst_frac_detector_before[ibin][jbin].Clear();
+      matrix_syst_frac_detector_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
+           
+      matrix_syst_frac_additional_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
+      matrix_syst_frac_additional_before[ibin][jbin].Clear();
+      matrix_syst_frac_additional_before[ibin][jbin].ResizeTo(bins_oldworld, bins_oldworld);
+
+      /////////////////////////////////////////// flux_geant_Xs
+      
+      for( int idx=1; idx<=17; idx++ ) {
+	
+	roostr = flux_geant_Xs_file_dir+TString::Format("result_syst_%d_%d/XsFlux/cov_%d.root", ibin, jbin, idx);
+	
+	TFile *file_temp = new TFile(roostr, "read");	
+	TMatrixD *matrix_temp = (TMatrixD*)file_temp->Get( TString::Format("frac_cov_xf_mat_%d",idx) );
+	if(idx<=13) matrix_syst_frac_flux_before[ibin][jbin] += (*matrix_temp);
+	else if(idx<=16) matrix_syst_frac_geant_before[ibin][jbin] += (*matrix_temp);
+	else matrix_syst_frac_Xs_before[ibin][jbin] += (*matrix_temp);
+	delete matrix_temp;
+	delete file_temp;	
+      }
+      
+    }// jbin
+  }// ibin
+
+  ///////////////////////////////////////////////////////////////////////
+
+  
   TMatrixD matrix_syst_abs_flux_before = matrix_syst_frac_flux_before[xbin][ybin];
   TMatrixD matrix_syst_abs_geant_before = matrix_syst_frac_geant_before[xbin][ybin];
   TMatrixD matrix_syst_abs_Xs_before = matrix_syst_frac_Xs_before[xbin][ybin];
@@ -572,6 +630,8 @@ void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_
   cout<<endl<<" ---> Set_Spectra_MatrixCov"<<endl<<endl;
 
   TString roostr = "";
+
+  g_flux_geant_Xs_file_dir = flux_geant_Xs_file_dir;
   
   ////////////////////////////////////////
   
@@ -824,7 +884,7 @@ void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_
     for(int ybin=0; ybin<=bins_dm2; ybin++) {      
       if( ybin==0 && xbin!=0 ) continue;
       if( xbin==0 && ybin!=0 ) continue;
-      
+      /*
       matrix_syst_frac_flux_before[xbin][ybin].ResizeTo(bins_oldworld, bins_oldworld);
       matrix_syst_frac_flux_before[xbin][ybin].Clear();
       matrix_syst_frac_flux_before[xbin][ybin].ResizeTo(bins_oldworld, bins_oldworld);
@@ -859,7 +919,7 @@ void TOsc::Set_Spectra_MatrixCov(TString eventlist_dir, TString event_summation_
 	delete matrix_temp;
 	delete file_temp;	
       }
-
+      */
       /////////////////////////////////////////// MCstat
       
       roostr = flux_geant_Xs_file_dir+TString::Format("result_syst_%d_%d/mc_stat/0.log", xbin, ybin);
