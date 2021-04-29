@@ -160,13 +160,14 @@ int main(int argc, char** argv)
     Osc_test->Minimization_OscPars_FullCov(0.001, 0.8, 0, 0);
   }
 
-  if( 0 ) {
+  if( 1 ) {
     Osc_test->Set_OscPars(0, 1);
     Osc_test->Set_Collapse();
     Osc_test->Produce_Variations(1);
     Osc_test->Set_Toy2dataFIT(1);
 
     int flag_fit_good       = 0;
+    double out_3v_chi2      = 0;
     double out_fit_chi2     = 1e6;
     double out_fit_s22theta = 0;
     double out_fit_dm2      = 0;        
@@ -179,6 +180,7 @@ int main(int argc, char** argv)
       
       Osc_test->Minimization_OscPars_FullCov(0, val_dm2, 1, 1);
       double fix_fit_chi2 = Osc_test->minimization_chi2;
+      out_3v_chi2 = fix_fit_chi2;
       cout<<TString::Format(" ---> %2d fitting results: status %4d, min_chi2 %8.3f, s22t %8.6f, dm2 %9.6f",
 			    ybin,
 			    Osc_test->minimization_status,
@@ -250,7 +252,7 @@ int main(int argc, char** argv)
 	    if( out_fit_chi2>Osc_test->minimization_chi2 ) {
 	      out_fit_chi2 = Osc_test->minimization_chi2;
 	      out_fit_s22theta = Osc_test->minimization_s22theta_val;
-	      out_fit_dm2 = Osc_test->minimization_dm2_val;
+	      out_fit_dm2 = Osc_test->minimization_dm2_val;	      
 	    }
 	  }
 	  
@@ -264,7 +266,7 @@ int main(int argc, char** argv)
     
     roostr = TString::Format("out_result_%05d.txt", ifile);
     ofstream ListWrite(roostr, ios::out|ios::trunc);
-    ListWrite<<TString::Format("%d %14.6f %10.6f %10.6f", flag_fit_good, out_fit_chi2, out_fit_s22theta, out_fit_dm2);
+    ListWrite<<TString::Format("%d %14.6f %14.6f %10.6f %10.6f", flag_fit_good, out_3v_chi2, out_fit_chi2, out_fit_s22theta, out_fit_dm2);
     
     for(int idx=0; idx<(Osc_test->matrix_dataFIT.GetNcols()); idx++) {
       ListWrite<<TString::Format(" %5.1f", Osc_test->matrix_dataFIT(0, idx));
