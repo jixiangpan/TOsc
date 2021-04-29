@@ -42,14 +42,14 @@ namespace DataBase {
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //// ccc
-void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, bool flag_fixed)
+void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, bool flag_fixed_all, bool flag_fixed_dm2)
 {
   TString roostr = "";
   
   minimization_status = (-100);
   minimization_chi2   = (-100);
     
-  if( !flag_fixed ) {
+  if( !flag_fixed_all ) {
     ROOT::Minuit2::Minuit2Minimizer min_Osc( ROOT::Minuit2::kMigrad );
     min_Osc.SetPrintLevel(0);
     min_Osc.SetStrategy(1); //0- cursory, 1- default, 2- thorough yet no more successful
@@ -108,7 +108,7 @@ void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, b
     min_Osc.SetFunction(Chi2Functor_Osc);
   
     min_Osc.SetVariable( 0, "sin_2_2theta", init_s22theta, 1e-3);
-    min_Osc.SetVariable( 1, "delta_m2", init_dm2, 1e-3);
+    min_Osc.SetVariable( 1, "delta_m2", init_dm2, 1e-2);
   
     //min_Osc.SetLowerLimitedVariable(0, "sin_2_2theta", init_s22theta, 1e-3, 0);
     //min_Osc.SetUpperLimitedVariable(0, "sin_2_2theta", init_s22theta, 1e-3, 1);
@@ -117,8 +117,12 @@ void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, b
 
     min_Osc.SetLimitedVariable(0, "sin_2_2theta", init_s22theta, 1e-3, 0, 1);
     min_Osc.SetLowerLimitedVariable(1, "delta_m2", init_dm2, 1e-3, 0);  
-  
-    // if( flag_fixed ) {
+
+    if( flag_fixed_dm2 ) {
+      min_Osc.SetFixedVariable( 1, "delta_m2", init_dm2 );
+    }
+    
+    // if( flag_fixed_all ) {
     //   min_Osc.SetFixedVariable( 0, "sin_2_2theta", init_s22theta );
     //   min_Osc.SetFixedVariable( 1, "delta_m2", init_dm2 );
     // }
@@ -146,7 +150,7 @@ void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, b
   /////////////////////////////////////////////
   /////////////////////////////////////////////
   
-  if( flag_fixed ) {
+  if( flag_fixed_all ) {
 
     double chi2 = 0;
     double s22theta = init_s22theta;
@@ -186,9 +190,54 @@ void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, b
     TMatrixD matrix_chi2 = matrix_delta * matrix_cov_total_inv *matrix_delta_T;
     chi2 = matrix_chi2(0,0);  
 
-    minimization_chi2 = chi2;
-	
-  }// flag_fixed
+    minimization_chi2         = chi2;
+    minimization_s22theta_val = s22theta;
+    minimization_dm2_val      = dm2;
+
+  }// flag_fixed_all
+ 
+}
+
+//// ccc
+void TOsc::Produce_Variations(int num_toy)
+{
+  //cout<<" ---> Producing pseudo data"<<endl;
+  
+  map_toy_dataforFIT.clear();
+
+  //////////////////////////
+
+  int num_Y = matrix_systFIT.GetNrows();
+
+  TMatrixDSym DSmatrix_cov(num_Y);
+  for(int ibin=0; ibin<num_Y; ibin++) {
+    for(int jbin=0; jbin<num_Y; jbin++) {
+      DSmatrix_cov(ibin, jbin) = matrix_systFIT(ibin, jbin);
+    }
+  }
+  TMatrixDSymEigen DSmatrix_eigen( DSmatrix_cov );
+  TMatrixD matrix_eigenvector = DSmatrix_eigen.GetEigenVectors();
+  TVectorD matrix_eigenvalue = DSmatrix_eigen.GetEigenValues();
+
+  for(int itoy=1; itoy<=num_toy; itoy++) {    
+    TMatrixD matrix_element(num_Y, 1);    
+    for(int ibin=0; ibin<num_Y; ibin++) {
+      if( matrix_eigenvalue(ibin)>=0 ) {
+        matrix_element(ibin,0) = rand->Gaus( 0, sqrt( matrix_eigenvalue(ibin) ) );
+      }
+      else {
+        matrix_element(ibin,0) = 0;
+      }      
+    }
+    TMatrixD matrix_variation = matrix_eigenvector * matrix_element;
+    for(int ibin=0; ibin<num_Y; ibin++) {
+      double val_with_syst = matrix_variation(ibin,0) + matrix_pred_asimvforFIT(0,ibin);// key point
+      if( val_with_syst<0 ) val_with_syst = 0;
+      map_toy_dataforFIT[itoy][ibin] = rand->PoissonD( val_with_syst );
+    }
+  }
+ 
+  //////////////////////////
  
 }
 

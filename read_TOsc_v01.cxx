@@ -150,14 +150,129 @@ int main(int argc, char** argv)
   // Osc_test->Set_Collapse();
   // Osc_test->Set_Asimov2dataFIT();
   // Osc_test->Set_data2dataFIT();  
-  // Osc_test->Minimization_OscPars_FullCov(0.1, 1.8, 1);
+  // Osc_test->Minimization_OscPars_FullCov(0.1, 1.8, 1, 0);
 
   if( 0 ) {// best-fit value
-    Osc_test->Set_OscPars(0.02, 1);
+    Osc_test->Set_OscPars(0.1, 1);
     Osc_test->Set_Collapse();
     Osc_test->Set_data2dataFIT();
     //Osc_test->Set_Asimov2dataFIT();
-    Osc_test->Minimization_OscPars_FullCov(0.01, 0.1, 0);
+    Osc_test->Minimization_OscPars_FullCov(0.001, 0.8, 0, 0);
+  }
+
+  if( 1 ) {
+    Osc_test->Set_OscPars(0, 1);
+    Osc_test->Set_Collapse();
+    Osc_test->Produce_Variations(1);
+    Osc_test->Set_Toy2dataFIT(1);
+
+    int flag_fit_good       = 0;
+    double out_fit_chi2     = 1e6;
+    double out_fit_s22theta = 0;
+    double out_fit_dm2      = 0;        
+        
+    for(int ybin=1; ybin<=Osc_test->h2_space->GetNbinsY(); ybin++) {
+
+      double val_dm2 = pow( 10, Osc_test->h2_space->GetYaxis()->GetBinCenter(ybin) );
+
+      cout<<endl;
+      
+      Osc_test->Minimization_OscPars_FullCov(0, val_dm2, 1, 1);
+      double fix_fit_chi2 = Osc_test->minimization_chi2;
+      cout<<TString::Format(" ---> %2d fitting results: status %4d, min_chi2 %8.3f, s22t %8.6f, dm2 %9.6f",
+			    ybin,
+			    Osc_test->minimization_status,
+			    Osc_test->minimization_chi2,
+			    Osc_test->minimization_s22theta_val,
+			    Osc_test->minimization_dm2_val
+			    )<<endl;
+
+      Osc_test->Minimization_OscPars_FullCov(0.1, val_dm2, 0, 1);
+      int free_fit_status  = Osc_test->minimization_status;
+      double free_fit_chi2 = Osc_test->minimization_chi2;
+      cout<<TString::Format(" ---> %2d fitting results: status %4d, min_chi2 %8.3f, s22t %8.6f, dm2 %9.6f",
+			    ybin,
+			    Osc_test->minimization_status,
+			    Osc_test->minimization_chi2,
+			    Osc_test->minimization_s22theta_val,
+			    Osc_test->minimization_dm2_val
+			    )<<endl;
+
+      if( free_fit_status==0 ) {
+
+	if( free_fit_chi2>fix_fit_chi2 ) {
+	  cout<<" ooo> free_fit_chi2 > fix_fit_chi2 "<<endl;
+	  
+	  Osc_test->Minimization_OscPars_FullCov(0.0001, val_dm2, 0, 1);
+	  cout<<TString::Format(" oaa> %2d fitting results: status %4d, min_chi2 %8.3f, s22t %8.6f, dm2 %9.6f",
+				ybin,
+				Osc_test->minimization_status,
+				Osc_test->minimization_chi2,
+				Osc_test->minimization_s22theta_val,
+				Osc_test->minimization_dm2_val
+				)<<endl;
+
+	  if( Osc_test->minimization_status==0 ) {
+	    Osc_test->Minimization_OscPars_FullCov(Osc_test->minimization_s22theta_val, val_dm2, 0, 0);
+	    cout<<TString::Format(" obb> %2d fitting results: status %4d, min_chi2 %8.3f, s22t %8.6f, dm2 %9.6f",
+				  ybin,
+				  Osc_test->minimization_status,
+				  Osc_test->minimization_chi2,
+				  Osc_test->minimization_s22theta_val,
+				  Osc_test->minimization_dm2_val
+				  )<<endl;
+
+	    if( Osc_test->minimization_status==0 ) {
+	      flag_fit_good = 1;
+	      if( out_fit_chi2>Osc_test->minimization_chi2 ) {
+		out_fit_chi2 = Osc_test->minimization_chi2;
+		out_fit_s22theta = Osc_test->minimization_s22theta_val;
+		out_fit_dm2 = Osc_test->minimization_dm2_val;
+	      }
+	    }
+	    
+	  }
+	}// if( free_fit_chi2>fix_fit_chi2 )
+	else {
+	  cout<<" ppp> free_fit_chi2 < fix_fit_chi2 "<<endl;
+	  
+	  Osc_test->Minimization_OscPars_FullCov(Osc_test->minimization_s22theta_val, val_dm2, 0, 0);
+	  cout<<TString::Format(" paa> %2d fitting results: status %4d, min_chi2 %8.3f, s22t %8.6f, dm2 %9.6f",
+				ybin,
+				Osc_test->minimization_status,
+				Osc_test->minimization_chi2,
+				Osc_test->minimization_s22theta_val,
+				Osc_test->minimization_dm2_val
+				)<<endl;
+
+	  if( Osc_test->minimization_status==0 ) {
+	    flag_fit_good = 1;
+	    if( out_fit_chi2>Osc_test->minimization_chi2 ) {
+	      out_fit_chi2 = Osc_test->minimization_chi2;
+	      out_fit_s22theta = Osc_test->minimization_s22theta_val;
+	      out_fit_dm2 = Osc_test->minimization_dm2_val;
+	    }
+	  }
+	  
+	}// else
+	
+      }// if( free_fit_status==0 )
+      
+      cout<<endl;
+    }// for(int ybin=1; ybin<=Osc_test->h2_space->GetNbinsY(); ybin++)
+
+    
+    roostr = TString::Format("out_result_%05d.txt", ifile);
+    ofstream ListWrite(roostr, ios::out|ios::trunc);
+    ListWrite<<TString::Format("%d %14.6f %10.6f %10.6f", flag_fit_good, out_fit_chi2, out_fit_s22theta, out_fit_dm2);
+    
+    for(int idx=0; idx<(Osc_test->matrix_dataFIT.GetNcols()); idx++) {
+      ListWrite<<TString::Format(" %5.1f", Osc_test->matrix_dataFIT(0, idx));
+    }
+    ListWrite<<endl;
+      
+    ListWrite.close();
+    
   }
   
   //////////////////////////////////////////////////////// for one point
@@ -181,23 +296,23 @@ int main(int argc, char** argv)
     Osc_test->Set_OscPars(test_s22theta, test_dm2);
     Osc_test->Set_Collapse();
     Osc_test->Set_Asimov2dataFIT();
-    Osc_test->Minimization_OscPars_FullCov(0, 7.25, 1);
+    Osc_test->Minimization_OscPars_FullCov(0, 7.25, 1, 0);
     dchi2_4vAsimov = (-Osc_test->minimization_chi2);
     
     /////////////////////////////////// 3v Asimov    
     Osc_test->Set_OscPars(0, 1);
     Osc_test->Set_Collapse();
     Osc_test->Set_Asimov2dataFIT();
-    Osc_test->Minimization_OscPars_FullCov(test_s22theta, test_dm2, 1);
+    Osc_test->Minimization_OscPars_FullCov(test_s22theta, test_dm2, 1, 0);
     dchi2_3vAsimov = Osc_test->minimization_chi2;
 
     /////////////////////////////////// data  
     Osc_test->Set_data2dataFIT();
   
-    Osc_test->Minimization_OscPars_FullCov(0, 1, 1);
+    Osc_test->Minimization_OscPars_FullCov(0, 1, 1, 0);
     chi2_3v_on_data = Osc_test->minimization_chi2;
   
-    Osc_test->Minimization_OscPars_FullCov(test_s22theta, test_dm2, 1);
+    Osc_test->Minimization_OscPars_FullCov(test_s22theta, test_dm2, 1, 0);
     chi2_4v_on_data = Osc_test->minimization_chi2;
     
     dchi2_data = chi2_4v_on_data - chi2_3v_on_data;
@@ -258,23 +373,23 @@ int main(int argc, char** argv)
     Osc_test->Set_OscPars(test_s22theta, test_dm2);
     Osc_test->Set_Collapse();
     Osc_test->Set_Asimov2dataFIT();
-    Osc_test->Minimization_OscPars_FullCov(0, 7.25, 1);
+    Osc_test->Minimization_OscPars_FullCov(0, 7.25, 1, 0);
     dchi2_4vAsimov = (-Osc_test->minimization_chi2);
     
     /////////////////////////////////// 3v Asimov    
     Osc_test->Set_OscPars(0, 1);
     Osc_test->Set_Collapse();
     Osc_test->Set_Asimov2dataFIT();
-    Osc_test->Minimization_OscPars_FullCov(test_s22theta, test_dm2, 1);
+    Osc_test->Minimization_OscPars_FullCov(test_s22theta, test_dm2, 1, 0);
     dchi2_3vAsimov = Osc_test->minimization_chi2;
 
     /////////////////////////////////// data  
     Osc_test->Set_data2dataFIT();
     
-    Osc_test->Minimization_OscPars_FullCov(0, 1, 1);
+    Osc_test->Minimization_OscPars_FullCov(0, 1, 1, 0);
     chi2_3v_on_data = Osc_test->minimization_chi2;
   
-    Osc_test->Minimization_OscPars_FullCov(test_s22theta, test_dm2, 1);
+    Osc_test->Minimization_OscPars_FullCov(test_s22theta, test_dm2, 1, 0);
     chi2_4v_on_data = Osc_test->minimization_chi2;
     
     dchi2_data = chi2_4v_on_data - chi2_3v_on_data;
@@ -336,7 +451,7 @@ int main(int argc, char** argv)
 	Osc_test->Set_OscPars(test_s22theta, test_dm2);
 	Osc_test->Set_Collapse();
 	Osc_test->Set_Asimov2dataFIT();
-	Osc_test->Minimization_OscPars_FullCov(0, 7.25, 1);
+	Osc_test->Minimization_OscPars_FullCov(0, 7.25, 1, 0);
 	dchi2_4vAsimov = (-Osc_test->minimization_chi2);
 	double chi2_3v_on_4vAsimov = Osc_test->minimization_chi2;
 	
@@ -344,7 +459,7 @@ int main(int argc, char** argv)
 	Osc_test->Set_OscPars(0, 1);
 	Osc_test->Set_Collapse();
 	Osc_test->Set_Asimov2dataFIT();
-	Osc_test->Minimization_OscPars_FullCov(test_s22theta, test_dm2, 1);
+	Osc_test->Minimization_OscPars_FullCov(test_s22theta, test_dm2, 1, 0);
 	dchi2_3vAsimov = Osc_test->minimization_chi2;
 	double chi2_4v_on_3vAsimov = Osc_test->minimization_chi2;
 	
@@ -352,10 +467,10 @@ int main(int argc, char** argv)
   
 	Osc_test->Set_data2dataFIT();
   
-	Osc_test->Minimization_OscPars_FullCov(0, 1, 1);
+	Osc_test->Minimization_OscPars_FullCov(0, 1, 1, 0);
 	chi2_3v_on_data = Osc_test->minimization_chi2;
   
-	Osc_test->Minimization_OscPars_FullCov(test_s22theta, test_dm2, 1);
+	Osc_test->Minimization_OscPars_FullCov(test_s22theta, test_dm2, 1, 0);
 	chi2_4v_on_data = Osc_test->minimization_chi2;
   
 	dchi2_data = chi2_4v_on_data - chi2_3v_on_data;

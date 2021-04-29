@@ -152,6 +152,8 @@ class TOsc {
     
   TMatrixD matrix_data_realdforFIT;
   TMatrixD matrix_pred_asimvforFIT;
+
+  map<int, map<int,double> >map_toy_dataforFIT;
   
   TMatrixD matrix_dataFIT;
   TMatrixD matrix_predFIT;
@@ -195,12 +197,21 @@ class TOsc {
     matrix_dataFIT = matrix_pred_asimvforFIT;
   }
 
+  void Set_Toy2dataFIT(int itoy) {
+    matrix_dataFIT.Clear(); matrix_dataFIT.ResizeTo( 1, matrix_pred_asimvforFIT.GetNcols() );
+    for(int idx=0; idx<matrix_pred_asimvforFIT.GetNcols(); idx++) {
+      matrix_dataFIT(0, idx) = map_toy_dataforFIT[itoy][idx];
+    }
+  }
+
   void Set_data2dataFIT() {
     matrix_dataFIT.Clear(); matrix_dataFIT.ResizeTo( 1, matrix_data_realdforFIT.GetNcols() );
     matrix_dataFIT = matrix_data_realdforFIT;
   }
+
+  void Produce_Variations(int num_toy);
   
-  void Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, bool flag_fixed);
+  void Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, bool flag_fixed_all, bool flag_fixed_dm2);
 };
 
 #endif
