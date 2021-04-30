@@ -161,7 +161,11 @@ int main(int argc, char** argv)
   }
 
   if( 1 ) {
-    Osc_test->Set_OscPars(0, 1);
+
+    double test_s22theta = 0.1;
+    double test_dm2      = 0.6;
+    
+    Osc_test->Set_OscPars(test_s22theta, test_dm2);
     Osc_test->Set_Collapse();
     Osc_test->Produce_Variations(1);
     Osc_test->Set_Toy2dataFIT(1);
@@ -178,7 +182,7 @@ int main(int argc, char** argv)
 
       cout<<endl;
       
-      Osc_test->Minimization_OscPars_FullCov(0, val_dm2, 1, 1);
+      Osc_test->Minimization_OscPars_FullCov(test_s22theta, test_dm2, 1, 1);
       double fix_fit_chi2 = Osc_test->minimization_chi2;
       out_3v_chi2 = fix_fit_chi2;
       cout<<TString::Format(" ---> %2d fitting results: status %4d, min_chi2 %8.3f, s22t %8.6f, dm2 %9.6f",
@@ -205,7 +209,7 @@ int main(int argc, char** argv)
 	if( free_fit_chi2>fix_fit_chi2 ) {
 	  cout<<" ooo> free_fit_chi2 > fix_fit_chi2 "<<endl;
 	  
-	  Osc_test->Minimization_OscPars_FullCov(0.0001, val_dm2, 0, 1);
+	  Osc_test->Minimization_OscPars_FullCov(test_s22theta, val_dm2, 0, 1);
 	  cout<<TString::Format(" oaa> %2d fitting results: status %4d, min_chi2 %8.3f, s22t %8.6f, dm2 %9.6f",
 				ybin,
 				Osc_test->minimization_status,
@@ -230,6 +234,13 @@ int main(int argc, char** argv)
 		out_fit_chi2 = Osc_test->minimization_chi2;
 		out_fit_s22theta = Osc_test->minimization_s22theta_val;
 		out_fit_dm2 = Osc_test->minimization_dm2_val;
+		cout<<TString::Format(" YYY> %2d fitting results: status %4d, min_chi2 %8.3f, s22t %8.6f, dm2 %9.6f",
+				      ybin,
+				      Osc_test->minimization_status,
+				      Osc_test->minimization_chi2,
+				      Osc_test->minimization_s22theta_val,
+				      Osc_test->minimization_dm2_val
+				      )<<endl;		
 	      }
 	    }
 	    
@@ -252,7 +263,14 @@ int main(int argc, char** argv)
 	    if( out_fit_chi2>Osc_test->minimization_chi2 ) {
 	      out_fit_chi2 = Osc_test->minimization_chi2;
 	      out_fit_s22theta = Osc_test->minimization_s22theta_val;
-	      out_fit_dm2 = Osc_test->minimization_dm2_val;	      
+	      out_fit_dm2 = Osc_test->minimization_dm2_val;
+	      cout<<TString::Format(" YYY> %2d fitting results: status %4d, min_chi2 %8.3f, s22t %8.6f, dm2 %9.6f",
+				    ybin,
+				    Osc_test->minimization_status,
+				    Osc_test->minimization_chi2,
+				    Osc_test->minimization_s22theta_val,
+				    Osc_test->minimization_dm2_val
+				    )<<endl;
 	    }
 	  }
 	  

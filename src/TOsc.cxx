@@ -108,7 +108,7 @@ void TOsc::Minimization_OscPars_FullCov(double init_s22theta, double init_dm2, b
     min_Osc.SetFunction(Chi2Functor_Osc);
   
     min_Osc.SetVariable( 0, "sin_2_2theta", init_s22theta, 1e-3);
-    min_Osc.SetVariable( 1, "delta_m2", init_dm2, 1e-2);
+    min_Osc.SetVariable( 1, "delta_m2", init_dm2, 1e-3);
   
     //min_Osc.SetLowerLimitedVariable(0, "sin_2_2theta", init_s22theta, 1e-3, 0);
     //min_Osc.SetUpperLimitedVariable(0, "sin_2_2theta", init_s22theta, 1e-3, 1);

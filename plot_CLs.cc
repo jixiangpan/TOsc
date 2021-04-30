@@ -411,6 +411,8 @@ void plot_CLs()
   gh_CLs_data[index_95]->Draw("same l");  
   gh_CLs_sens[index_95]->Draw("same l");
 
+  gh_CLs_data[0]->Draw("same l");  
+
   //gh_CLs_data[index_99]->Draw("same l");  
   //gh_CLs_sens[index_99]->Draw("same l");
 
